@@ -31,7 +31,7 @@
         "pathToImageUrls": {
             "title": "Path to image URLs",
             "type": "string",
-            "description": "Path from item object to an array where the URLs are located. Provide in \"javascript style\", e.g. \"details[0].images\n",
+            "description": "Path from item object to an array or string where the URL(s) is/are located. Provide in \"javascript style\", e.g. \"details[0].images\n",
             "editor": "textfield",
             "default": "images"
         },

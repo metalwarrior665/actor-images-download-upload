@@ -144,8 +144,15 @@ Apify.main(async () => {
     try{
         inputData.forEach((item) => {
             if (item.skipDownload) return // we can skip any item
-            const imageUrlsArray = objectPath.get(item, pathToImageUrls)
-            imageUrlsArray.forEach(image=>{
+            let imagesFromPath = objectPath.get(item, pathToImageUrls)
+            if (!Array.isArray(imagesFromPath) && typeof imagesFromPath !== 'string') {
+                stats.inc(props.itemsWithoutImages);
+                return;
+            }
+            if (typeof imagesFromPath === 'string') {
+                imagesFromPath = [imagesFromPath];
+            }
+            imagesFromPath.forEach(image=>{
                 stats.inc(props.imagesTotal)
                 if (images[image] === undefined) { // undefined means they were not yet added
                     images[image] = {} // false means they were not yet downloaded / uploaded or the process failed

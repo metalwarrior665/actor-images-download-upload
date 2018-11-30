@@ -6,6 +6,7 @@ module.exports.Stats = class Stats {
         this.imagesUploaded = 0;
         this.imagesFailed = 0;
         this.duplicates = 0;
+        this.itemsWithoutImages = 0;
         this.failedInfo = [];
     }
 
@@ -53,6 +54,7 @@ module.exports.Stats = class Stats {
             imagesUploaded: 'imagesUploaded',
             imagesFailed: 'imagesFailed',
             imagesDuplicates: 'imagesDuplicates',
+            itemsWithoutImages: 'itemsWithoutImages',
             failedInfo: 'failedInfo',
         };
     }
