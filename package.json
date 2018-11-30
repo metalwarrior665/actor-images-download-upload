@@ -1,0 +1,35 @@
+{
+  "name": "images-download-upload",
+  "version": "0.1.0",
+  "description": "Actor for downloading and uploading images",
+  "main": "src/main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node src/main"
+  },
+  "keywords": [
+    "images",
+    "upload",
+    "download"
+  ],
+  "author": "Lukas Krivka",
+  "license": "ISC",
+  "dependencies": {
+    "@types/jimp": "^0.2.28",
+    "apify": "^0.9.13",
+    "aws-sdk": "^2.363.0",
+    "jimp": "^0.5.6",
+    "md5": "^2.2.1",
+    "object-path": "^0.11.4",
+    "request-fixed-tunnel-agent": "^2.88.3"
+  },
+  "devDependencies": {
+    "eslint": "^5.8.0",
+    "eslint-config-airbnb": "^17.1.0",
+    "eslint-config-airbnb-base": "^13.1.0",
+    "eslint-plugin-import": "^2.14.0",
+    "eslint-plugin-mocha": "^5.2.0",
+    "eslint-plugin-promise": "^4.0.1",
+    "mocha": "^5.2.0"
+  }
+}
