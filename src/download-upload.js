@@ -70,9 +70,12 @@ const download = async (url) => {
             errorsCount++;
             continue;
         }
-        const isImage = checkIfImage(response);
+        const { isImage, error } = await checkIfImage(response);
+        console.log('isImage', isImage);
+        console.log('error', error);
         if (!isImage) {
             errorsCount++;
+            errors.push({ message: error });
         } else {
             imageDownloaded = true;
         }

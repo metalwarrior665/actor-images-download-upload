@@ -2,13 +2,27 @@ const AWS = require('aws-sdk');
 const Apify = require('apify');
 const Jimp = require('jimp');
 
+const { MINIMAL_HEIGHT, MINIMAL_WIDTH } = require('./constants');
+
 module.exports.checkIfImage = async (buffer) => {
     try {
         const metadata = await Jimp.read(buffer);
         const { width, height } = metadata.bitmap;
-        if (width && height) return true;
+        if (width >= MINIMAL_WIDTH && height >= MINIMAL_HEIGHT) {
+            return {
+                isImage: true,
+                error: null,
+            };
+        }
+        return {
+            isImage: false,
+            error: 'Image is too small.',
+        };
     } catch (e) {
-        return false;
+        return {
+            isImage: false,
+            error: `Image could not be parsed. Error: ${e.message}`,
+        };
     }
 };
 

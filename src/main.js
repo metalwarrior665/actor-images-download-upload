@@ -200,6 +200,7 @@ Apify.main(async () => {
             if (info.imageUploaded) {
                 stats.inc(props.imagesUploaded);
             } else {
+                stats.inc(props.imagesFailed);
                 stats.addFailed({ url, errors: info.errors });
             }
         },

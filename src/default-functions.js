@@ -23,3 +23,19 @@ module.exports.defaultPostDownloadFunction = (data, imagesObject, fileNameFuncti
         return { ...item, images: newImages };
     });
 };
+
+const ahmedFunction = (data, imagesObject, fileNameFunction, md5) => {
+    return data.reduce((newData, item) => {
+        if (!Array.isArray(item.images) || item.images.length === 0) {
+            return newData;
+        }
+        const downloadedImages = item.images.filter((imageUrl) => {
+            return imagesObject[imageUrl] && imagesObject[imageUrl].imageUploaded;
+        });
+        if (downloadedImages.length === 0) {
+            return newData;
+        }
+        const newItem = { ...item, images: downloadedImages };
+        return newData.concat(item);
+    }, []);
+}
