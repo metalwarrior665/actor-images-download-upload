@@ -1,7 +1,8 @@
 const Apify = require('apify');
-const Promise = require('bluebird')
+const Promise = require('bluebird');
 const objectPath = require("object-path");
-const R = require('ramda')
+const R = require('ramda');
+const md5 = require('md5');
 
 const { Stats } = require('./stats')
 const { loadItems, getObjectWithAllKeysFromS3, setS3 } = require('./utils')
@@ -12,6 +13,11 @@ const { checkInput } = require('./input-parser');
 const stats = new Stats()
 stats.display()
 const props = stats.getProps();
+
+// periodially displaying stats
+setInterval(() => {
+    stats.display();
+}, 20 * 1000);
 
 const keyValueStores = Apify.client.keyValueStores;
 
@@ -60,6 +66,9 @@ Apify.main(async () => {
     }
 
     let images = (await Apify.getValue('STATE')) || {}
+    Object.keys(images).forEach((imageUrl) => {
+        images[imageUrl].fromState = true;
+    });;
     let inputData = []
 
     console.log('images loaded from state', Object.keys(images).length)
@@ -72,7 +81,6 @@ Apify.main(async () => {
     // LOADING FROM KV
     if(input.storeId){
         console.log('Loading from kv')
-
     }
 
     // LOADING FROM ANYWHERE
@@ -140,10 +148,13 @@ Apify.main(async () => {
         }
     }
 
+    const itemsSkipped = inputData.filter((item) => !!item.skipDownload).length;
+    stats.set(props.itemsSkipped, itemsSkipped);
+
     // add images to state
     try{
         inputData.forEach((item) => {
-            if (item.skipDownload) return // we can skip any item
+            if (item.skipDownload) return // we skip item with this field
             let imagesFromPath = objectPath.get(item, pathToImageUrls)
             if (!Array.isArray(imagesFromPath) && typeof imagesFromPath !== 'string') {
                 stats.inc(props.itemsWithoutImages);
@@ -152,13 +163,18 @@ Apify.main(async () => {
             if (typeof imagesFromPath === 'string') {
                 imagesFromPath = [imagesFromPath];
             }
-            imagesFromPath.forEach(image=>{
+            if (imagesFromPath.length === 0) {
+                stats.inc(props.itemsWithoutImages);
+                return;
+            }
+            imagesFromPath.forEach((image) => {
                 stats.inc(props.imagesTotal)
                 if (images[image] === undefined) { // undefined means they were not yet added
                     images[image] = {} // false means they were not yet downloaded / uploaded or the process failed
-                }
-                else{
-                    stats.inc(props.imagesDuplicates)
+                } else if (typeof images[image] === 'object' && images[image].fromState) {
+                    stats.inc(props.imagesDownloadedPreviously);
+                } else {
+                    stats.inc(props.imagesDuplicates);
                 }
             })
         })
@@ -174,7 +190,7 @@ Apify.main(async () => {
         Object.keys(images),
         async (url) => {
             if(typeof images[url].imageUploaded === 'boolean') return; // means it was already download before
-            const key = fileNameFunction(url);
+            const key = fileNameFunction(url, md5);
             if(objectWithPreviouslyUploadedImages && objectWithPreviouslyUploadedImages[key]){
                 stats.inc(props.imagesAlreadyOnS3);
                 return
@@ -193,7 +209,7 @@ Apify.main(async () => {
     // postprocessing function
     if ((outputTo && outputTo !== 'no-output') && postDownloadFunction) {
         console.log('Will save output data to:', outputTo);
-        const processedData = await postDownloadFunction(inputData, images, fileNameFunction)
+        const processedData = await postDownloadFunction(inputData, images, fileNameFunction, md5)
 
         if (outputTo === 'key-value-store') {
             await Apify.setValue('OUTPUT', processedData);

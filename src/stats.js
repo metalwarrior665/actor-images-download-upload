@@ -1,11 +1,13 @@
 module.exports.Stats = class Stats {
     constructor() {
-        this.inputDataCount = 0;
+        this.itemsTotal = 0;
+        this.itemsSkipped = 0;
         this.imagesTotal = 0;
         this.imagesAlreadyOnS3 = 0;
         this.imagesUploaded = 0;
         this.imagesFailed = 0;
-        this.duplicates = 0;
+        this.imagesDuplicates = 0;
+        this.imagesDownloadedPreviously = 0;
         this.itemsWithoutImages = 0;
         this.failedInfo = [];
     }
@@ -48,12 +50,14 @@ module.exports.Stats = class Stats {
 
     getProps() {
         return {
-            inputDataCount: 'inputDataCount',
+            itemsTotal: 'itemsTotal',
+            itemsSkipped: 'itemsSkipped',
             imagesTotal: 'imagesTotal',
             imagesAlreadyOnS3: 'imagesAlreadyOnS3',
             imagesUploaded: 'imagesUploaded',
             imagesFailed: 'imagesFailed',
             imagesDuplicates: 'imagesDuplicates',
+            imagesDownloadedPreviously: 'imagesDownloadedPreviously',
             itemsWithoutImages: 'itemsWithoutImages',
             failedInfo: 'failedInfo',
         };
