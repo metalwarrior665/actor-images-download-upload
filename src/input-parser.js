@@ -19,7 +19,7 @@ module.exports.checkInput = (input) => {
 
     if (typeof input.preDownloadFunction === 'string') {
         try {
-            input.fileNameFunction = eval(input.fileNameFunction);
+            input.preDownloadFunction = eval(input.preDownloadFunction);
         } catch (e) {
             throw new Error('preDownloadFunction function cannot be evaluated as a function. Error:', e.message);
         }
@@ -27,7 +27,7 @@ module.exports.checkInput = (input) => {
 
     if (typeof input.postDownloadFunction === 'string') {
         try {
-            input.fileNameFunction = eval(input.fileNameFunction);
+            input.postDownloadFunction = eval(input.postDownloadFunction);
         } catch (e) {
             throw new Error('postDownloadFunction function cannot be evaluated as a function. Error:', e.message);
         }
