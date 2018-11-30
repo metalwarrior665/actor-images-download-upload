@@ -9,6 +9,9 @@ module.exports.Stats = class Stats {
         this.imagesDuplicates = 0;
         this.imagesDownloadedPreviously = 0;
         this.itemsWithoutImages = 0;
+        this.timeSpentDownloading = 0;
+        this.timeSpentProcessing = 0;
+        this.timeSpentUploading = 0;
         this.failedInfo = [];
     }
 
@@ -17,6 +20,13 @@ module.exports.Stats = class Stats {
             throw new Error(`Property ${prop} is not initiated in the Stats class so it cannot be incremented!`);
         }
         this[prop]++;
+    }
+
+    add(prop, count) {
+        if (this[prop] == null) {
+            throw new Error(`Property ${prop} is not initiated in the Stats class so it cannot be incremented!`);
+        }
+        this[prop] += count;
     }
 
     set(prop, val) {
@@ -60,6 +70,9 @@ module.exports.Stats = class Stats {
             imagesDuplicates: 'imagesDuplicates',
             imagesDownloadedPreviously: 'imagesDownloadedPreviously',
             itemsWithoutImages: 'itemsWithoutImages',
+            timeSpentDownloading: 'timeSpentDownloading',
+            timeSpentProcessing: 'timeSpentProcessing',
+            timeSpentUploading: 'timeSpentUploading',
             failedInfo: 'failedInfo',
         };
     }

@@ -196,6 +196,9 @@ Apify.main(async () => {
                 return
             }
             const info = await downloadUpload(url, key, uploadOptions);
+            stats.add(props.timeSpentDownloading, info.time.downloading);
+            stats.add(props.timeSpentProcessing, info.time.processing);
+            stats.add(props.timeSpentUploading, info.time.uploading);
             images[url] = info;
             if (info.imageUploaded) {
                 stats.inc(props.imagesUploaded);

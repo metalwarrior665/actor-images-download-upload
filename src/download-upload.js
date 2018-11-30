@@ -60,17 +60,26 @@ const download = async (url) => {
         ]).catch(handleError);
     };
 
+    let timeDownloading = 0;
+    let timeProcessing = 0;
+
     while (!imageDownloaded && errorsCount < 3) {
+        const startDownloading = Date.now();
         if (errorsCount > 0) {
             response = await sendRequest(proxyOptions);
         } else {
             response = await sendRequest(normalOptions);
         }
+        timeDownloading += Date.now() - startDownloading;
         if (!response) {
             errorsCount++;
             continue;
         }
+
+        const startProcessing = Date.now();
         const { isImage, error } = await checkIfImage(response);
+        timeProcessing += Date.now() - startProcessing;
+
         if (!isImage) {
             errorsCount++;
             errors.push({ message: error });
@@ -82,17 +91,29 @@ const download = async (url) => {
         response,
         errors,
         imageDownloaded,
+        timeDownloading,
+        timeProcessing,
     };
 };
 
 module.exports.downloadUpload = async (url, key, uploadOptions) => {
     const errors = [];
+    const time = {
+        downloading: 0,
+        processing: 0,
+        uploading: 0,
+    };
     let imageUploaded = false;
 
-    const { response: buffer, errors: downloadErrors, imageDownloaded } = await download(url);
+    const { response: buffer, errors: downloadErrors, imageDownloaded, timeDownloading, timeProcessing } = await download(url);
+
+    time.downloading = timeDownloading;
+    time.processing = timeProcessing;
 
     if (imageDownloaded) {
+        const startUploading = Date.now();
         const uploadResult = await upload(key, buffer, uploadOptions);
+        time.uploading += (Date.now() - startUploading);
 
         ({ imageUploaded } = uploadResult);
         uploadResult.errors.forEach((error) => {
@@ -105,5 +126,6 @@ module.exports.downloadUpload = async (url, key, uploadOptions) => {
     return {
         imageUploaded,
         errors,
+        time,
     };
 };
