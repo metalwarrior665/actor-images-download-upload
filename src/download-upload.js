@@ -5,7 +5,7 @@ const { PROXY_URL } = require('./constants');
 const { checkIfImage } = require('./utils');
 
 const upload = async (key, buffer, uploadOptions) => {
-    let errors = [];
+    const errors = [];
     if (uploadOptions.uploadTo === 'key-value-store') {
         await Apify.setValue(key, buffer, { contentType: 'image/jpeg' })
             .catch((e) => {

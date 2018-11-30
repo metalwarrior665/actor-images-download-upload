@@ -28,7 +28,9 @@ module.exports.Stats = class Stats {
 
     addFailed(failedObject) {
         if (typeof faileObject !== 'object' || !failedObject.url || !failedObject.errors) { // add other later
-            throw new Error('Argument to "addFailed" of Stat class must be object with url and error properties!');
+            console.log('failed object');
+            console.dir(failedObject, { depth: null });
+            throw new Error('Argument to "addFailed" of Stat class must be object with url and errors properties!');
         }
         this.failedInfo.push(failedObject);
     }
