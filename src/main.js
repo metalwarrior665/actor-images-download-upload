@@ -128,7 +128,7 @@ Apify.main(async () => {
     }
     inputData = inputData.slice(0, maxItems)
 
-    stats.set(props.inputDataCount, inputData.length)
+    stats.set(props.itemsTotal, inputData.length)
 
     if(inputData.length === 0) throw new Error("Didn't load any items from kv store or dataset")
 
@@ -148,8 +148,8 @@ Apify.main(async () => {
         }
     }
 
-    const itemsSkipped = inputData.filter((item) => !!item.skipDownload).length;
-    stats.set(props.itemsSkipped, itemsSkipped);
+    const itemsSkippedCount = inputData.filter((item) => !!item.skipDownload).length;
+    stats.set(props.itemsSkipped, itemsSkippedCount);
 
     // add images to state
     try{
