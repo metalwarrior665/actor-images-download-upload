@@ -28,6 +28,13 @@
             "description": "Where to save the output with enhanced data.",
             "enum": ["no-output", "key-value-store", "dataset"]
         },
+        "pathToImageUrls": {
+            "title": "Path to image URLs",
+            "type": "string",
+            "description": "Path from item object to an array where the URLs are located. Provide in \"javascript style\", e.g. \"details[0].images\n",
+            "editor": "textfield",
+            "default": "images"
+        },
         "fileNameFunction": {
             "title": "Filename function",
             "type": "string",
