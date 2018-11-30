@@ -131,6 +131,7 @@ Apify.main(async () => {
     if (preDownloadFunction){
         try{
             console.log('Transforming items with pre download function')
+            console.log(preDownloadFunction)
             inputData = await preDownloadFunction(inputData)
             console.log(`We got ${inputData.length} after pre download`)
         } catch(e) {
