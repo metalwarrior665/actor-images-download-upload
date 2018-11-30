@@ -184,7 +184,7 @@ Apify.main(async () => {
             if (info.imageUploaded) {
                 stats.inc(props.imagesUploaded);
             } else {
-                stats.addFailed(info);
+                stats.addFailed({ url, errors: info.errors });
             }
         },
         {concurrency}
