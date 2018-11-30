@@ -130,11 +130,12 @@ Apify.main(async () => {
     // filtering items
     if (preDownloadFunction){
         try{
-            console.log('Transforming items with pre transform function')
+            console.log('Transforming items with pre download function')
             inputData = await preDownloadFunction(inputData)
-            console.log(`We got ${inputData.length} after pre transform`)
+            console.log(`We got ${inputData.length} after pre download`)
         } catch(e) {
-            throw new Error('Pre transform function failed with error:', e.message)
+            console.dir(e);
+            throw new Error('Pre download function failed with error');
         }
     }
 
