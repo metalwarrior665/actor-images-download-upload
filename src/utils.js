@@ -4,7 +4,13 @@ const Jimp = require('jimp');
 
 const { MINIMAL_HEIGHT, MINIMAL_WIDTH } = require('./constants');
 
-module.exports.checkIfImage = async (buffer) => {
+module.exports.checkIfImage = async (buffer, skipImageCheck) => {
+    if (skipImageCheck) {
+        return {
+            isImage: true,
+            error: null,
+        };
+    }
     try {
         const metadata = await Jimp.read(buffer);
         const { width, height } = metadata.bitmap;

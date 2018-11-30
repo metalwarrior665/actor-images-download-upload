@@ -32,7 +32,7 @@ const upload = async (key, buffer, uploadOptions) => {
     };
 };
 
-const download = async (url) => {
+const download = async (url, skipImageCheck) => {
     const normalOptions = {
         url,
         encoding: null,
@@ -77,7 +77,7 @@ const download = async (url) => {
         }
 
         const startProcessing = Date.now();
-        const { isImage, error } = await checkIfImage(response);
+        const { isImage, error } = await checkIfImage(response, skipImageCheck);
         timeProcessing += Date.now() - startProcessing;
 
         if (!isImage) {
@@ -96,7 +96,7 @@ const download = async (url) => {
     };
 };
 
-module.exports.downloadUpload = async (url, key, uploadOptions) => {
+module.exports.downloadUpload = async (url, key, uploadOptions, skipImageCheck) => {
     const errors = [];
     const time = {
         downloading: 0,
@@ -105,7 +105,13 @@ module.exports.downloadUpload = async (url, key, uploadOptions) => {
     };
     let imageUploaded = false;
 
-    const { response: buffer, errors: downloadErrors, imageDownloaded, timeDownloading, timeProcessing } = await download(url);
+    const {
+        response: buffer,
+        errors: downloadErrors,
+        imageDownloaded,
+        timeDownloading,
+        timeProcessing,
+    } = await download(url, skipImageCheck);
 
     time.downloading = timeDownloading;
     time.processing = timeProcessing;

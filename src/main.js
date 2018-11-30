@@ -54,6 +54,7 @@ Apify.main(async () => {
         maxItems,
         concurrency,
         flatten,
+        skipImageCheck,
         s3Bucket,
         s3AccessKeyId,
         s3SecretAccessKey,
@@ -195,7 +196,7 @@ Apify.main(async () => {
                 stats.inc(props.imagesAlreadyOnS3);
                 return
             }
-            const info = await downloadUpload(url, key, uploadOptions);
+            const info = await downloadUpload(url, key, uploadOptions, skipImageCheck);
             stats.add(props.timeSpentDownloading, info.time.downloading);
             stats.add(props.timeSpentProcessing, info.time.processing);
             stats.add(props.timeSpentUploading, info.time.uploading);

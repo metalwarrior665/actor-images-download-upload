@@ -77,6 +77,11 @@
             "type": "boolean",
             "description": "Useful if the data in input are nested in more arrays. If this is checked, arrays will be flattened."
         },
+        "skipImageCheck":{
+            "title": "Skip image check",
+            "type": "boolean",
+            "description": "You can disable quality checking of images to speed up the process."
+        },
         "s3Bucket":{
             "title": "S3 Bucket",
             "type": "string",
