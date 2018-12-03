@@ -1,6 +1,6 @@
 const AWS = require('aws-sdk');
 const Apify = require('apify');
-const Jimp = require('jimp');
+const imageSize = require('image-size');
 const fileType = require('file-type');
 
 module.exports.hideTokenFromInput = (input) => {
@@ -25,7 +25,7 @@ module.exports.checkIfImage = async (buffer, imageCheck) => {
         };
     }
     try {
-        if (imageCheck.type === 'content-type') {
+        if (imageCheck.type === 'content-type' || imageCheck.type === 'image-size') {
             const { mime } = fileType(buffer);
             if (!mime.includes('image/')) {
                 return {
@@ -34,9 +34,8 @@ module.exports.checkIfImage = async (buffer, imageCheck) => {
                 };
             }
         }
-        if (imageCheck.type === 'jimp') {
-            const metadata = await Jimp.read(buffer);
-            const { width, height } = metadata.bitmap;
+        if (imageCheck.type === 'image-size') {
+            const { width, height } = imageSize(buffer);
             if (width < imageCheck.minWidth || height < imageCheck.minHeight) {
                 return {
                     isImage: false,

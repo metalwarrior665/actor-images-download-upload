@@ -81,7 +81,7 @@
             "title": "Image check type",
             "type": "string",
             "description": "Type of the image check. If the image will not pass, the download will be retied with proxy and if that doesn't pass, the image is not uploaded.",
-            "enum": ["none", "content-type", "jimp"]
+            "enum": ["none", "content-type", "image-size"]
         },
         "imageCheckMinSize":{
             "title": "Min size in KB",
