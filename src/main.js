@@ -5,7 +5,7 @@ const R = require('ramda');
 const md5 = require('md5');
 
 const { Stats } = require('./stats')
-const { loadItems, getObjectWithAllKeysFromS3, setS3 } = require('./utils')
+const { loadItems, getObjectWithAllKeysFromS3, setS3, hideTokenFromInput } = require('./utils')
 const { defaultFileNameFunction, defaultPostDownloadFunction } = require('./default-functions');
 const { downloadUpload } = require('./download-upload')
 const { checkInput } = require('./input-parser');
@@ -25,7 +25,7 @@ Apify.main(async () => {
     // Get input of your act
     let input = await Apify.getValue('INPUT');
     console.log('INPUT')
-    console.dir(input)
+    console.dir(hideTokenFromInput(input))
 
     // handling crawler webhooks
     if(input.data){
@@ -246,7 +246,7 @@ Apify.main(async () => {
                 runStarted,
                 runFinished,
                 runTimeSeconds,
-                input,
+                input: hideTokenFromInput(input),
                 stats: stats.return(),
             });
         } catch (e) {

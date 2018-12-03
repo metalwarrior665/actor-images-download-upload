@@ -3,7 +3,10 @@ const Apify = require('apify');
 const Jimp = require('jimp');
 const fileType = require('file-type');
 
-const { MINIMAL_HEIGHT, MINIMAL_WIDTH } = require('./constants');
+module.exports.hideTokenFromInput = (input) => {
+    const newInput = { ...input, s3AccessKeyId: '******', s3SecretAccessKey: '******' };
+    return newInput;
+};
 
 module.exports.checkIfImage = async (buffer, imageCheck) => {
     // none always passes
