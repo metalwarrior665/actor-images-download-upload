@@ -4,6 +4,16 @@ const rp = require('request-fixed-tunnel-agent');
 const { PROXY_URL } = require('./constants');
 const { checkIfImage } = require('./utils');
 
+const deduplicateErrors = (errors) => {
+    return errors.reduce((newErrors, error) => {
+        const maybeFoundDup = newErrors.find((er) => er.when === error.when && er.message === error.message);
+        if (maybeFoundDup) {
+            return newErrors;
+        }
+        return newErrors.concat(error);
+    }, []);
+};
+
 const upload = async (key, buffer, uploadOptions) => {
     const errors = [];
     if (uploadOptions.uploadTo === 'key-value-store') {
@@ -32,7 +42,7 @@ const upload = async (key, buffer, uploadOptions) => {
     };
 };
 
-const download = async (url, skipImageCheck) => {
+const download = async (url, imageCheck) => {
     const normalOptions = {
         url,
         encoding: null,
@@ -77,7 +87,7 @@ const download = async (url, skipImageCheck) => {
         }
 
         const startProcessing = Date.now();
-        const { isImage, error } = await checkIfImage(response, skipImageCheck);
+        const { isImage, error } = await checkIfImage(response, imageCheck);
         timeProcessing += Date.now() - startProcessing;
 
         if (!isImage) {
@@ -96,7 +106,7 @@ const download = async (url, skipImageCheck) => {
     };
 };
 
-module.exports.downloadUpload = async (url, key, uploadOptions, skipImageCheck) => {
+module.exports.downloadUpload = async (url, key, uploadOptions, imageCheck) => {
     const errors = [];
     const time = {
         downloading: 0,
@@ -111,7 +121,7 @@ module.exports.downloadUpload = async (url, key, uploadOptions, skipImageCheck) 
         imageDownloaded,
         timeDownloading,
         timeProcessing,
-    } = await download(url, skipImageCheck);
+    } = await download(url, imageCheck);
 
     time.downloading = timeDownloading;
     time.processing = timeProcessing;
@@ -131,7 +141,7 @@ module.exports.downloadUpload = async (url, key, uploadOptions, skipImageCheck) 
     });
     return {
         imageUploaded,
-        errors,
+        errors: deduplicateErrors(errors),
         time,
     };
 };

@@ -1,28 +1,49 @@
 const AWS = require('aws-sdk');
 const Apify = require('apify');
 const Jimp = require('jimp');
+const fileType = require('file-type');
 
 const { MINIMAL_HEIGHT, MINIMAL_WIDTH } = require('./constants');
 
-module.exports.checkIfImage = async (buffer, skipImageCheck) => {
-    if (skipImageCheck) {
+module.exports.checkIfImage = async (buffer, imageCheck) => {
+    // none always passes
+    if (imageCheck.type === 'none') {
         return {
             isImage: true,
             error: null,
         };
     }
-    try {
-        const metadata = await Jimp.read(buffer);
-        const { width, height } = metadata.bitmap;
-        if (width >= MINIMAL_WIDTH && height >= MINIMAL_HEIGHT) {
-            return {
-                isImage: true,
-                error: null,
-            };
-        }
+    // first we check buffer size
+    const imageSizeInKB = Math.floor(buffer.length / 1024)
+    if (imageSizeInKB < imageCheck.minSize) {
         return {
             isImage: false,
-            error: 'Image is too small.',
+            error: `Image is too small. Actual size: ${imageSizeInKB}, min size: ${imageCheck.minSize}`,
+        };
+    }
+    try {
+        if (imageCheck.type === 'content-type') {
+            const { mime } = fileType(buffer);
+            if (!mime.includes('image/')) {
+                return {
+                    isImage: false,
+                    error: `Content type is not an image. Instead: ${mime}`,
+                };
+            }
+        }
+        if (imageCheck.type === 'jimp') {
+            const metadata = await Jimp.read(buffer);
+            const { width, height } = metadata.bitmap;
+            if (width < imageCheck.minWidth || height < imageCheck.minHeight) {
+                return {
+                    isImage: false,
+                    error: `Image width or height is too small. Actual: width: ${width}, height: ${height}. Minimum: width: ${imageCheck.minWidth}, height: ${imageCheck.minHeight} `,
+                };
+            }
+        }
+        return {
+            isImage: true,
+            error: null,
         };
     } catch (e) {
         return {

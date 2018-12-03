@@ -54,12 +54,21 @@ Apify.main(async () => {
         maxItems,
         concurrency,
         flatten,
-        skipImageCheck,
+        imageCheckType,
+        imageCheckMinSize,
+        imageCheckMinWidth,
+        imageCheckMinHeight,
         s3Bucket,
         s3AccessKeyId,
         s3SecretAccessKey,
     } = input
 
+    const imageCheck = {
+        type: imageCheckType,
+        minSize: imageCheckMinSize,
+        minWidth: imageCheckMinWidth,
+        minHeight: imageCheckMinHeight,
+    }
     const s3Credentials = { s3Bucket, s3AccessKeyId, s3SecretAccessKey }
     const uploadOptions = {
         uploadTo,
@@ -196,7 +205,7 @@ Apify.main(async () => {
                 stats.inc(props.imagesAlreadyOnS3);
                 return
             }
-            const info = await downloadUpload(url, key, uploadOptions, skipImageCheck);
+            const info = await downloadUpload(url, key, uploadOptions, imageCheck);
             stats.add(props.timeSpentDownloading, info.time.downloading);
             stats.add(props.timeSpentProcessing, info.time.processing);
             stats.add(props.timeSpentUploading, info.time.uploading);

@@ -77,10 +77,29 @@
             "type": "boolean",
             "description": "Useful if the data in input are nested in more arrays. If this is checked, arrays will be flattened."
         },
-        "skipImageCheck":{
+        "imageCheckType":{
             "title": "Skip image check",
-            "type": "boolean",
-            "description": "You can disable quality checking of images to speed up the process."
+            "type": "string",
+            "description": "Type of the image check. If the image will not pass, the download will be retied with proxy and if that doesn't pass, the image is not uploaded.",
+            "enum": ["none", "content-type", "jimp"]
+        },
+        "imageCheckMinSize":{
+            "title": "Min size in KB",
+            "type": "integer",
+            "description": "Minimum size of the image to pass the image check test",
+            "minimum": 1
+        },
+        "imageCheckMinWidth":{
+            "title": "Min width",
+            "type": "integer",
+            "description": "Minimim width of the image in pixels to pass the image check. Works only if the image check type is 'jimp'.",
+            "minimum": 1
+        },
+        "imageCheckMinHeight":{
+            "title": "Min height",
+            "type": "integer",
+            "description": "Minimim height of the image in pixels to pass the image check. Works only if the image check type is 'jimp'.",
+            "minimum": 1
         },
         "s3Bucket":{
             "title": "S3 Bucket",
