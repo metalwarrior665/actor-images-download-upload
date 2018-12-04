@@ -243,15 +243,17 @@ Apify.main(async () => {
             const runStarted = process.env.APIFY_STARTED_AT;
             const runFinished = new Date().toISOString();
             const runTimeSeconds = Math.round((new Date(runFinished).getTime() - new Date(runStarted).getTime())/1000)
-
-            const dataset = await Apify.openDataset(saveStats);
-            await dataset.pushData({
+            const statsObject = {
                 runStarted,
                 runFinished,
                 runTimeSeconds,
                 input: hideTokenFromInput(input),
                 stats: stats.return(),
-            });
+            }
+
+            const dataset = await Apify.openDataset(saveStats);
+            await dataset.pushData(statsObject);
+            await Apify.setValue('stats')
         } catch (e) {
             console.log('Saving stats failed with error:', e.message);
         }
