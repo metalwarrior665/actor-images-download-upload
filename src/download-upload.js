@@ -19,7 +19,7 @@ const upload = async (key, buffer, uploadOptions) => {
     if (uploadOptions.uploadTo === 'key-value-store') {
         await Apify.setValue(key, buffer, { contentType: 'image/jpeg' })
             .catch((e) => {
-                errors.push(e);
+                errors.push(e.message);
             });
     }
     if (uploadOptions.uploadTo === 's3') {
@@ -27,7 +27,7 @@ const upload = async (key, buffer, uploadOptions) => {
             Key: key,
             Body: buffer,
         }).promise().catch((e) => {
-            errors.push(e);
+            errors.push(e.message);
         });
     }
     if (errors.length > 0) {
@@ -87,7 +87,7 @@ const download = async (url, imageCheck) => {
 
         if (!isImage) {
             errorsCount++;
-            errors.push({ message: error });
+            errors.push(error);
         } else {
             imageDownloaded = true;
         }
@@ -130,11 +130,11 @@ module.exports.downloadUpload = async (url, key, uploadOptions, imageCheck) => {
 
         ({ imageUploaded } = uploadResult);
         uploadResult.errors.forEach((error) => {
-            errors.push({ when: 'upload', message: error.message });
+            errors.push({ when: 'upload', message: error });
         });
     }
     downloadErrors.forEach((error) => {
-        errors.push({ when: 'download', message: error.message });
+        errors.push({ when: 'download', message: error });
     });
     return {
         imageUploaded,
