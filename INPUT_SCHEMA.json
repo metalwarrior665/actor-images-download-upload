@@ -101,6 +101,12 @@
             "description": "Minimim height of the image in pixels to pass the image check. Works only if the image check type is 'jimp'.",
             "minimum": 1
         },
+        "imageCheckMaxRetries":{
+            "title": "Max retries",
+            "type": "integer",
+            "description": "How many times should actor retry if the file it tries to download fails to pass the tests. Setting this too high can lead to unecessary loops.",
+            "minimum": 0
+        },
         "s3Bucket":{
             "title": "S3 Bucket",
             "type": "string",

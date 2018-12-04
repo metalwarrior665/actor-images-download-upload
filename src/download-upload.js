@@ -73,7 +73,7 @@ const download = async (url, imageCheck) => {
     let timeDownloading = 0;
     let timeProcessing = 0;
 
-    while (!imageDownloaded && errorsCount < 3) {
+    while (!imageDownloaded && errorsCount < imageCheck.maxRetries) {
         const startDownloading = Date.now();
         if (errorsCount > 0) {
             response = await sendRequest(proxyOptions);

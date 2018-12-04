@@ -58,6 +58,7 @@ Apify.main(async () => {
         imageCheckMinSize,
         imageCheckMinWidth,
         imageCheckMinHeight,
+        imageCheckMaxRetries,
         s3Bucket,
         s3AccessKeyId,
         s3SecretAccessKey,
@@ -68,6 +69,7 @@ Apify.main(async () => {
         minSize: imageCheckMinSize,
         minWidth: imageCheckMinWidth,
         minHeight: imageCheckMinHeight,
+        maxRetries: imageCheckMaxRetries,
     }
     const s3Credentials = { s3Bucket, s3AccessKeyId, s3SecretAccessKey }
     const uploadOptions = {
@@ -224,6 +226,7 @@ Apify.main(async () => {
     if ((outputTo && outputTo !== 'no-output') && postDownloadFunction) {
         console.log('Will save output data to:', outputTo);
         const processedData = await postDownloadFunction(inputData, images, fileNameFunction, md5)
+        console.log('Post-download processed data length:', processedData.length)
 
         if (outputTo === 'key-value-store') {
             await Apify.setValue('OUTPUT', processedData);
