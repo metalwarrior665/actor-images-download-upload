@@ -19,7 +19,7 @@ const upload = async (key, buffer, uploadOptions) => {
     if (uploadOptions.uploadTo === 'key-value-store') {
         await Apify.setValue(key, buffer, { contentType: 'image/jpeg' })
             .catch((e) => {
-                errors.push(e.message);
+                errors.push(e);
             });
     }
     if (uploadOptions.uploadTo === 's3') {
@@ -27,7 +27,7 @@ const upload = async (key, buffer, uploadOptions) => {
             Key: key,
             Body: buffer,
         }).promise().catch((e) => {
-            errors.push(e.message);
+            errors.push(e);
         });
     }
     if (errors.length > 0) {
