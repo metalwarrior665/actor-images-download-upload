@@ -105,7 +105,8 @@
             "title": "Max retries",
             "type": "integer",
             "description": "How many times should actor retry if the file it tries to download fails to pass the tests. Setting this too high can lead to unecessary loops.",
-            "minimum": 0
+            "minimum": 0,
+            "default": 1
         },
         "s3Bucket":{
             "title": "S3 Bucket",
