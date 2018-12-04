@@ -181,6 +181,7 @@ Apify.main(async () => {
             }
             imagesFromPath.forEach((image) => {
                 stats.inc(props.imagesTotal)
+                if (typeof  image !== 'string') return;
                 if (images[image] === undefined) { // undefined means they were not yet added
                     images[image] = {} // false means they were not yet downloaded / uploaded or the process failed
                 } else if (typeof images[image] === 'object' && images[image].fromState) {
