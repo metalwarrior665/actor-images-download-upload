@@ -47,11 +47,10 @@ const download = async (url, imageCheck) => {
         url,
         encoding: null,
         timeout: 25000,
+        resolveWithFullResponse: true,
     };
     const proxyOptions = {
-        url,
-        encoding: null,
-        timeout: 25000,
+        ...normalOptions,
         proxy: PROXY_URL,
     };
     let errorsCount = 0;
@@ -81,13 +80,9 @@ const download = async (url, imageCheck) => {
             response = await sendRequest(normalOptions);
         }
         timeDownloading += Date.now() - startDownloading;
-        if (!response) {
-            errorsCount++;
-            continue;
-        }
 
         const startProcessing = Date.now();
-        const { isImage, error } = await checkIfImage(response, imageCheck);
+        const { isImage, error, retry } = await checkIfImage(response, imageCheck);
         timeProcessing += Date.now() - startProcessing;
 
         if (!isImage) {
@@ -96,6 +91,8 @@ const download = async (url, imageCheck) => {
         } else {
             imageDownloaded = true;
         }
+
+        if (!retry) break;
     }
     return {
         response,

@@ -8,38 +8,62 @@ module.exports.hideTokenFromInput = (input) => {
     return newInput;
 };
 
-module.exports.checkIfImage = async (buffer, imageCheck) => {
-    // none always passes
-    if (imageCheck.type === 'none') {
-        return {
-            isImage: true,
-            error: null,
-        };
-    }
-    // first we check buffer size
-    const imageSizeInKB = Math.floor(buffer.length / 1024)
-    if (imageSizeInKB < imageCheck.minSize) {
-        return {
-            isImage: false,
-            error: `Image is too small. Actual size: ${imageSizeInKB}, min size: ${imageCheck.minSize}`,
-        };
-    }
-    try {
+module.exports.checkIfImage = async (response, imageCheck) => {
+    try{
+        if (!response) {
+            return {
+                isImage: false,
+                error: `No response object, probably crashed`,
+                retry: false,
+            }
+        }
+
+        const { statusCode } = response;
+
+        if (statusCode === 404) {
+            return {
+                isImage: false,
+                error: statusCode,
+                retry: false,
+            }
+        } else if (statusCode >= 400) {
+            return {
+                isImage: false,
+                error: statusCode,
+                retry: true,
+            }
+        }
+
+        const buffer = response.body
+
         if (imageCheck.type === 'content-type' || imageCheck.type === 'image-size') {
             const { mime } = fileType(buffer);
             if (!mime.includes('image/')) {
                 return {
                     isImage: false,
                     error: `Content type is not an image. Instead: ${mime}`,
+                    retry: true,
                 };
             }
         }
+
+        // first we check buffer size
+        const imageSizeInKB = Math.floor(buffer.length / 1024)
+        if (imageSizeInKB < imageCheck.minSize) {
+            return {
+                isImage: false,
+                error: `Image is too small. Actual size: ${imageSizeInKB}, min size: ${imageCheck.minSize}`,
+                retry: false,
+            };
+        }
+
         if (imageCheck.type === 'image-size') {
             const { width, height } = imageSize(buffer);
             if (width < imageCheck.minWidth || height < imageCheck.minHeight) {
                 return {
                     isImage: false,
                     error: `Image width or height is too small. Actual: width: ${width}, height: ${height}. Minimum: width: ${imageCheck.minWidth}, height: ${imageCheck.minHeight} `,
+                    retry: false,
                 };
             }
         }
@@ -50,7 +74,8 @@ module.exports.checkIfImage = async (buffer, imageCheck) => {
     } catch (e) {
         return {
             isImage: false,
-            error: `Image could not be parsed. Error: ${e.message}`,
+            error: `Image check crashed. Error: ${e.message}`,
+            retry: false,
         };
     }
 };
