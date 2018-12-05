@@ -112,6 +112,14 @@ module.exports.downloadUpload = async (url, key, uploadOptions, imageCheck) => {
     };
     let imageUploaded = false;
 
+    if (!url.includes('http://') && !url.includes('https://')) {
+        return {
+            imageUploaded,
+            errors: [{ when: 'before-download', error: 'url does not contain http or https' }],
+            time,
+        };
+    }
+
     const {
         response: buffer,
         errors: downloadErrors,
