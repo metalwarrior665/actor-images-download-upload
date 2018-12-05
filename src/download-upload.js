@@ -121,7 +121,7 @@ module.exports.downloadUpload = async (url, key, uploadOptions, imageCheck) => {
     }
 
     const {
-        response: buffer,
+        response,
         errors: downloadErrors,
         imageDownloaded,
         timeDownloading,
@@ -133,7 +133,7 @@ module.exports.downloadUpload = async (url, key, uploadOptions, imageCheck) => {
 
     if (imageDownloaded) {
         const startUploading = Date.now();
-        const uploadResult = await upload(key, buffer, uploadOptions);
+        const uploadResult = await upload(key, response.body, uploadOptions);
         time.uploading += (Date.now() - startUploading);
 
         ({ imageUploaded } = uploadResult);

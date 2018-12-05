@@ -254,7 +254,7 @@ Apify.main(async () => {
 
             const dataset = await Apify.openDataset(saveStats);
             await dataset.pushData(statsObject);
-            await Apify.setValue('stats')
+            await Apify.setValue('stats', statsObject)
         } catch (e) {
             console.log('Saving stats failed with error:', e.message);
         }
