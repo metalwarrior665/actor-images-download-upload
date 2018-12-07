@@ -3,6 +3,7 @@ const Apify = require('apify');
 const imageSize = require('image-size');
 const fileType = require('file-type');
 
+
 module.exports.hideTokenFromInput = (input) => {
     const newInput = { ...input, s3AccessKeyId: '******', s3SecretAccessKey: '******' };
     return newInput;

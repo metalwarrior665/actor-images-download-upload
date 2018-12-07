@@ -15,8 +15,9 @@ stats.display()
 const props = stats.getProps();
 
 // periodially displaying stats
-setInterval(() => {
+setInterval(async () => {
     stats.display();
+    await Apify.setValue('stats', stats.return())
 }, 20 * 1000);
 
 const keyValueStores = Apify.client.keyValueStores;
