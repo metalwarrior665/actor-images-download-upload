@@ -52,6 +52,7 @@ Apify.main(async () => {
         preDownloadFunction,
         postDownloadFunction = defaultPostDownloadFunction,
         saveStats,
+        loadState,
         maxItems,
         concurrency,
         flatten,
@@ -78,7 +79,18 @@ Apify.main(async () => {
         s3Client: uploadTo === 's3' ? setS3(s3Credentials) : null
     }
 
+    console.log('loading state...')
+
     let images = (await Apify.getValue('STATE')) || {}
+    if (loadState && Object.keys(images).length === 0) {
+        try {
+            images = await keyValueStores.getRecord({ storeId: loadState, key: 'STATE'}).then((res) => res.body)
+        } catch (e) {
+            console.dir(e);
+            throw new Error(`State could not be loaded because of error`);
+        }
+    }
+
     Object.keys(images).forEach((imageUrl) => {
         images[imageUrl].fromState = true;
     });;

@@ -60,6 +60,12 @@
             "description": "You can specify a dataset name where statistics of each run will be saved.",
             "editor": "textfield"
         },
+        "loadState":{
+            "title": "Load state from run",
+            "type": "string",
+            "description": "If you previous run crashed, you can load state and continue from here. Just provide the previous store id",
+            "editor": "textfield"
+        },
         "maxItems":{
             "title": "Max items",
             "type": "integer",
