@@ -178,7 +178,7 @@ Apify.main(async () => {
 
     // add images to state
     try{
-        inputData.forEach((item) => {
+        inputData.forEach((item, itemIndex) => {
             if (item.skipDownload) return // we skip item with this field
             let imagesFromPath = objectPath.get(item, pathToImageUrls)
             if (!Array.isArray(imagesFromPath) && typeof imagesFromPath !== 'string') {
@@ -196,7 +196,9 @@ Apify.main(async () => {
                 stats.inc(props.imagesTotal)
                 if (typeof  image !== 'string') return;
                 if (images[image] === undefined) { // undefined means they were not yet added
-                    images[image] = {} // false means they were not yet downloaded / uploaded or the process failed
+                    images[image] = {
+                        itemIndex
+                    } // false means they were not yet downloaded / uploaded or the process failed
                 } else if (typeof images[image] === 'object' && images[image].fromState) {
                     stats.inc(props.imagesDownloadedPreviously);
                 } else {
@@ -214,9 +216,10 @@ Apify.main(async () => {
     // parrallel download/upload processing
     await Promise.map(
         Object.keys(images),
-        async (url) => {
+        async (url, index) => {
             if(typeof images[url].imageUploaded === 'boolean') return; // means it was already download before
-            const key = fileNameFunction(url, md5);
+            const itemOfImage = inputData[images[url].itemIndex]
+            const key = fileNameFunction(url, md5, index, itemOfImage);
             if(objectWithPreviouslyUploadedImages && objectWithPreviouslyUploadedImages[key]){
                 stats.inc(props.imagesAlreadyOnS3);
                 return
