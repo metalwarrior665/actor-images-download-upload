@@ -1,8 +1,8 @@
 const Apify = require('apify');
 const rp = require('request-fixed-tunnel-agent');
 
-const { PROXY_URL } = require('./constants');
-const { checkIfImage, convertWebpToPng } = require('./utils');
+const { PROXY_URL, REQUEST_EXTERNAL_TIMEOUT } = require('./constants');
+const { checkIfImage, convertWebpToPng  } = require('./utils');
 
 const deduplicateErrors = (errors) => {
     return errors.reduce((newErrors, error) => {
@@ -46,7 +46,6 @@ const download = async (url, imageCheck, key) => {
     const normalOptions = {
         url,
         encoding: null,
-        timeout: 25000,
         resolveWithFullResponse: true,
     };
     const proxyOptions = {
@@ -65,7 +64,7 @@ const download = async (url, imageCheck, key) => {
     const sendRequest = async (options) => {
         return Promise.race([
             rp(options),
-            new Promise((resolve) => setTimeout(resolve, 30000)),
+            new Promise((resolve, reject) => setTimeout(() => reject(new Error('Timeouted')), REQUEST_EXTERNAL_TIMEOUT)),
         ]).catch(handleError);
     };
 

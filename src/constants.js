@@ -2,6 +2,6 @@ const Apify = require('apify');
 
 module.exports = {
     PROXY_URL: Apify.getApifyProxyUrl(),
-    MINIMAL_WIDTH: 100,
-    MINIMAL_HEIGHT: 100,
+    REQUEST_INTERNAL_TIMEOUT: 6000,
+    REQUEST_EXTERNAL_TIMEOUT: 7000,
 };

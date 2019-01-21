@@ -27,6 +27,7 @@ module.exports.convertWebpToPng = async (origBuffer) => {
     return readFileAsync(pngKey);
 }
 
+
 module.exports.hideTokenFromInput = (input) => {
     const newInput = { ...input, s3AccessKeyId: '******', s3SecretAccessKey: '******' };
     return newInput;

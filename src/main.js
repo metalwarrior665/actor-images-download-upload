@@ -15,8 +15,9 @@ stats.display()
 const props = stats.getProps();
 
 // periodially displaying stats
-setInterval(() => {
+setInterval(async () => {
     stats.display();
+    await Apify.setValue('stats', stats.return())
 }, 20 * 1000);
 
 const keyValueStores = Apify.client.keyValueStores;
@@ -51,6 +52,7 @@ Apify.main(async () => {
         preDownloadFunction,
         postDownloadFunction = defaultPostDownloadFunction,
         saveStats,
+        loadState,
         maxItems,
         concurrency,
         flatten,
@@ -79,7 +81,18 @@ Apify.main(async () => {
         s3Client: uploadTo === 's3' ? setS3(s3Credentials) : null
     }
 
+    console.log('loading state...')
+
     let images = (await Apify.getValue('STATE')) || {}
+    if (loadState && Object.keys(images).length === 0) {
+        try {
+            images = await keyValueStores.getRecord({ storeId: loadState, key: 'STATE'}).then((res) => res.body)
+        } catch (e) {
+            console.dir(e);
+            throw new Error(`State could not be loaded because of error`);
+        }
+    }
+
     Object.keys(images).forEach((imageUrl) => {
         images[imageUrl].fromState = true;
     });;
@@ -167,7 +180,7 @@ Apify.main(async () => {
 
     // add images to state
     try{
-        inputData.forEach((item) => {
+        inputData.forEach((item, itemIndex) => {
             if (item.skipDownload) return // we skip item with this field
             let imagesFromPath = objectPath.get(item, pathToImageUrls)
             if (!Array.isArray(imagesFromPath) && typeof imagesFromPath !== 'string') {
@@ -185,7 +198,9 @@ Apify.main(async () => {
                 stats.inc(props.imagesTotal)
                 if (typeof  image !== 'string') return;
                 if (images[image] === undefined) { // undefined means they were not yet added
-                    images[image] = {} // false means they were not yet downloaded / uploaded or the process failed
+                    images[image] = {
+                        itemIndex
+                    } // false means they were not yet downloaded / uploaded or the process failed
                 } else if (typeof images[image] === 'object' && images[image].fromState) {
                     stats.inc(props.imagesDownloadedPreviously);
                 } else {
