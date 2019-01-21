@@ -19,11 +19,11 @@ const converter = (input, output, option) => new Promise((res, rej) => {
     })
 })
 
-module.exports.convertWebpToPng = async (origBuffer) => {
+module.exports.convertWebpToPng = async (origBuffer, key)=> {
     const webpKey = `${key}.webp`;
     const pngKey = `${key}.png`;
     await writeFileAsync(webpKey, origBuffer);
-    await converter(webpKey, pngKey);
+    await converter(webpKey, pngKey, '-o');
     return readFileAsync(pngKey);
 }
 
@@ -60,9 +60,11 @@ module.exports.checkIfImage = async (response, imageCheck) => {
         }
 
         const buffer = response.body
+        let contentType;
 
         if (imageCheck.type === 'content-type' || imageCheck.type === 'image-size') {
             const { mime } = fileType(buffer);
+            contentType = mime;
             if (!mime.includes('image/')) {
                 return {
                     isImage: false,
@@ -95,6 +97,7 @@ module.exports.checkIfImage = async (response, imageCheck) => {
         return {
             isImage: true,
             error: null,
+            contentType,
         };
     } catch (e) {
         return {

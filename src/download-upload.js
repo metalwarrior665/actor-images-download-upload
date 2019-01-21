@@ -56,6 +56,7 @@ const download = async (url, imageCheck, key) => {
     const errors = [];
     let imageDownloaded = false;
     let response;
+    let contentTypeMain;
 
     const handleError = (e) => {
         errors.push(`${e.message}`);
@@ -81,7 +82,7 @@ const download = async (url, imageCheck, key) => {
         timeDownloading += Date.now() - startDownloading;
 
         const startProcessing = Date.now();
-        const { isImage, error, retry } = await checkIfImage(response, imageCheck);
+        const { isImage, error, retry, contentType } = await checkIfImage(response, imageCheck);
         timeProcessing += Date.now() - startProcessing;
 
         if (!isImage) {
@@ -89,19 +90,22 @@ const download = async (url, imageCheck, key) => {
             errors.push(error);
         } else {
             imageDownloaded = true;
+            contentTypeMain = contentType
         }
 
         if (!retry) break;
     }
 
     // converting to other mime
-    if (imageDownloaded && imageCheck.convertWebpToPng) {
+    if (imageDownloaded && contentTypeMain === 'image/webp' && imageCheck.convertWebpToPng) {
+        const startProcessing = Date.now()
         try {
-            reponse.body = await convertWebpToPng(buffer, key)
+            response.body = await convertWebpToPng(response.body, key)
         } catch (e) {
             imageDownloaded = false;
             errors.push('Error in converting:', e.message);
         }
+        timeProcessing += Date.now() - startProcessing;
     }
 
     return {
