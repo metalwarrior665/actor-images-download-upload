@@ -62,6 +62,7 @@ Apify.main(async () => {
         s3Bucket,
         s3AccessKeyId,
         s3SecretAccessKey,
+        convertWebpToPng
     } = input
 
     const imageCheck = {
@@ -70,6 +71,7 @@ Apify.main(async () => {
         minWidth: imageCheckMinWidth,
         minHeight: imageCheckMinHeight,
         maxRetries: imageCheckMaxRetries,
+        convertWebpToPng
     }
     const s3Credentials = { s3Bucket, s3AccessKeyId, s3SecretAccessKey }
     const uploadOptions = {
@@ -201,9 +203,10 @@ Apify.main(async () => {
     // parrallel download/upload processing
     await Promise.map(
         Object.keys(images),
-        async (url) => {
+        async (url, index) => {
             if(typeof images[url].imageUploaded === 'boolean') return; // means it was already download before
-            const key = fileNameFunction(url, md5);
+            const itemOfImage = inputData[images[url].itemIndex]
+            const key = fileNameFunction(url, md5, index, itemOfImage);
             if(objectWithPreviouslyUploadedImages && objectWithPreviouslyUploadedImages[key]){
                 stats.inc(props.imagesAlreadyOnS3);
                 return

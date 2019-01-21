@@ -2,6 +2,30 @@ const AWS = require('aws-sdk');
 const Apify = require('apify');
 const imageSize = require('image-size');
 const fileType = require('file-type');
+const webp = require('webp-converter');
+const fs = require('fs');
+const { promisify } = require('util');
+
+const writeFileAsync = promisify(fs.writeFile);
+const readFileAsync = promisify(fs.readFile);
+
+const converter = (input, output, option) => new Promise((res, rej) => {
+    webp.dwebp(input, output, option, (status, err) => {
+        if (err) {
+            rej(err);
+        } else {
+            res(status)
+        }
+    })
+})
+
+module.exports.convertWebpToPng = async (origBuffer) => {
+    const webpKey = `${key}.webp`;
+    const pngKey = `${key}.png`;
+    await writeFileAsync(webpKey, origBuffer);
+    await converter(webpKey, pngKey);
+    return readFileAsync(pngKey);
+}
 
 module.exports.hideTokenFromInput = (input) => {
     const newInput = { ...input, s3AccessKeyId: '******', s3SecretAccessKey: '******' };

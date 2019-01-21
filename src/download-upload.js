@@ -2,7 +2,7 @@ const Apify = require('apify');
 const rp = require('request-fixed-tunnel-agent');
 
 const { PROXY_URL } = require('./constants');
-const { checkIfImage } = require('./utils');
+const { checkIfImage, convertWebpToPng } = require('./utils');
 
 const deduplicateErrors = (errors) => {
     return errors.reduce((newErrors, error) => {
@@ -42,7 +42,7 @@ const upload = async (key, buffer, uploadOptions) => {
     };
 };
 
-const download = async (url, imageCheck) => {
+const download = async (url, imageCheck, key) => {
     const normalOptions = {
         url,
         encoding: null,
@@ -94,6 +94,17 @@ const download = async (url, imageCheck) => {
 
         if (!retry) break;
     }
+
+    // converting to other mime
+    if (imageDownloaded && imageCheck.convertWebpToPng) {
+        try {
+            reponse.body = await convertWebpToPng(buffer, key)
+        } catch (e) {
+            imageDownloaded = false;
+            errors.push('Error in converting:', e.message);
+        }
+    }
+
     return {
         response,
         errors,
@@ -126,7 +137,7 @@ module.exports.downloadUpload = async (url, key, uploadOptions, imageCheck) => {
         imageDownloaded,
         timeDownloading,
         timeProcessing,
-    } = await download(url, imageCheck);
+    } = await download(url, imageCheck, key);
 
     time.downloading = timeDownloading;
     time.processing = timeProcessing;
