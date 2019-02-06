@@ -8,7 +8,7 @@
             "title": "Upload to",
             "type": "string",
             "description": "Where do you want to upload the image files",
-            "enum": ["key-value-store", "s3"]
+            "enum": ["key-value-store", "s3", "no-upload"]
         },
         "inputId": {
             "title": "Input Id",
