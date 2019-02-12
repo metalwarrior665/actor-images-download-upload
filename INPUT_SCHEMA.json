@@ -54,12 +54,6 @@
             "editor": "javascript",
             "prefill": ""
         },
-        "saveStats":{
-            "title": "Save stats",
-            "type": "string",
-            "description": "You can specify a dataset name where statistics of each run will be saved.",
-            "editor": "textfield"
-        },
         "loadState":{
             "title": "Load state from store",
             "type": "string",

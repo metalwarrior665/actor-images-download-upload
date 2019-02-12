@@ -51,7 +51,7 @@ Apify.main(async () => {
         fileNameFunction = defaultFileNameFunction,
         preDownloadFunction,
         postDownloadFunction = defaultPostDownloadFunction,
-        saveStats,
+        // saveStats,
         loadState,
         maxItems,
         concurrency,
