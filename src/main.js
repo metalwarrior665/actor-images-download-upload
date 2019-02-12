@@ -17,7 +17,7 @@ const props = stats.getProps();
 // periodially displaying stats
 setInterval(async () => {
     stats.display();
-    await Apify.setValue('stats', stats.return())
+    await Apify.setValue('stats', stats.return());
 }, 20 * 1000);
 
 const keyValueStores = Apify.client.keyValueStores;
@@ -25,18 +25,18 @@ const keyValueStores = Apify.client.keyValueStores;
 Apify.main(async () => {
     // Get input of your act
     let input = await Apify.getValue('INPUT');
-    console.log('INPUT')
-    console.dir(hideTokenFromInput(input))
+    console.log('INPUT');
+    console.dir(hideTokenFromInput(input));
 
     // handling crawler webhooks
-    if(input.data){
-        try{
-            console.log('trying to parse crawler webhook data')
-            input = { inputId: input._id, ...JSON.parse(input.data) }
-            console.log('crawler webhook data parsed as')
-            console.dir(input)
+    if(input.data) {
+        try {
+            console.log('trying to parse crawler webhook data');
+            input = { inputId: input._id, ...JSON.parse(input.data) };
+            console.log('crawler webhook data parsed as');
+            console.dir(input);
         } catch(e) {
-            throw new Error(`Parsing crawler webhook data failed with error: ${e.message}`)
+            throw new Error(`Parsing crawler webhook data failed with error: ${e.message}`);
         }
     }
 
@@ -101,7 +101,7 @@ Apify.main(async () => {
     console.log('images loaded from state', Object.keys(images).length)
 
     // SAVING STATE
-    setInterval(async ()=>{
+    const stateInterval = setInterval(async ()=>{
         await Apify.setValue('STATE', images)
     }, 20 * 1000)
 
@@ -241,6 +241,11 @@ Apify.main(async () => {
         {concurrency}
     )
 
+    // Saving STATE for last time
+    await Apify.setValue('STATE', images);
+    clearInterval(stateInterval);
+    stats.display();
+
     // postprocessing function
     if ((outputTo && outputTo !== 'no-output') && postDownloadFunction) {
         console.log('Will save output data to:', outputTo);
@@ -250,32 +255,41 @@ Apify.main(async () => {
         if (outputTo === 'key-value-store') {
             await Apify.setValue('OUTPUT', processedData);
         }
+
+        // Have to save state of dataset push because it takes too long
         if (outputTo === 'dataset') {
-            await Apify.pushData(processedData);
-        }
-    }
-
-    stats.display()
-
-    if (saveStats) {
-        try {
-            const runStarted = process.env.APIFY_STARTED_AT;
-            const runFinished = new Date().toISOString();
-            const runTimeSeconds = Math.round((new Date(runFinished).getTime() - new Date(runStarted).getTime())/1000)
-            const statsObject = {
-                runStarted,
-                runFinished,
-                runTimeSeconds,
-                input: hideTokenFromInput(input),
-                stats: stats.return(),
+            const chunkSize = 500;
+            let index = await Apify.getValue('PUSHING-STATE').then((res) => res ? res.index : 0);
+            console.log(`Loaded starting index: ${index}`);
+            for (; index < processedData.length; index += chunkSize) {
+                console.log(`pushing data ${index}:${index + chunkSize}`);
+                await Apify.pushData(processedData.slice(index, index + chunkSize));
+                await Apify.setValue('PUSHING-STATE', { index: index + chunkSize })
             }
 
-            const dataset = await Apify.openDataset(saveStats);
-            await dataset.pushData(statsObject);
-            await Apify.setValue('stats', statsObject)
-        } catch (e) {
-            console.log('Saving stats failed with error:', e.message);
+            // saving PUSHING-STATE for last time
+            await Apify.setValue('PUSHING-STATE', { index })
         }
     }
+
+    try {
+        const runStarted = process.env.APIFY_STARTED_AT;
+        const runFinished = new Date().toISOString();
+        const runTimeSeconds = Math.round((new Date(runFinished).getTime() - new Date(runStarted).getTime())/1000)
+        const statsObject = {
+            runStarted,
+            runFinished,
+            runTimeSeconds,
+            input: hideTokenFromInput(input),
+            stats: stats.return(),
+        }
+
+        // const dataset = await Apify.openDataset(saveStats);
+        // await dataset.pushData(statsObject);
+        await Apify.setValue('stats', statsObject)
+    } catch (e) {
+        console.log('Saving stats failed with error:', e.message);
+    }
+
     console.log('Downloading finished');
 });
