@@ -196,7 +196,10 @@ Apify.main(async () => {
             }
             imagesFromPath.forEach((image) => {
                 stats.inc(props.imagesTotal)
-                if (typeof  image !== 'string') return;
+                if (typeof  image !== 'string') {
+                    stats.inc(props.imagesNotString)
+                    return;
+                }
                 if (images[image] === undefined) { // undefined means they were not yet added
                     images[image] = {
                         itemIndex
