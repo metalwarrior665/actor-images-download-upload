@@ -130,6 +130,11 @@
             "type": "string",
             "description": "Only relevant if you want to upload to S3! You can create these credentials for IAM user.",
             "editor": "textfield"
+        },
+        "s3CheckIfAlreadyThere": {
+            "title": "Check if key is already on S3",
+            "type": "boolean",
+            "description": "This option is useful if you don't want to rewrite the same image. GET requests are also cheaper than PUT requests"
         }
     }
 }

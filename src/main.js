@@ -64,6 +64,7 @@ Apify.main(async () => {
         s3Bucket,
         s3AccessKeyId,
         s3SecretAccessKey,
+        s3CheckIfAlreadyThere,
         convertWebpToPng
     } = input
 
@@ -216,7 +217,20 @@ Apify.main(async () => {
         throw new Error('Adding images to state failed with error:', e.message)
     }
 
-    const objectWithPreviouslyUploadedImages = null // await getObjectWithAllKeysFromS3(input.domain)
+    const checkIfAlreadyOnS3 = async (key, uploadOptions) => {
+        try {
+            const data = await uploadOptions.s3Client.headObject({
+                Key: key,
+            }).promise()
+            if (data.ContentLength > 0) {
+                return { isThere: true, errors: [] }
+            } else {
+                return { isThere: false, errors: [e.message] }
+            }
+        } catch (e) {
+            return { isThere: false, errors: [e.message] }
+        }
+    }
 
     // parrallel download/upload processing
     await Promise.map(
@@ -225,9 +239,16 @@ Apify.main(async () => {
             if(typeof images[url].imageUploaded === 'boolean') return; // means it was already download before
             const itemOfImage = inputData[images[url].itemIndex]
             const key = fileNameFunction(url, md5, index, itemOfImage);
-            if(objectWithPreviouslyUploadedImages && objectWithPreviouslyUploadedImages[key]){
-                stats.inc(props.imagesAlreadyOnS3);
-                return
+            if(s3CheckIfAlreadyThere && uploadTo === 's3') {
+                const { isThere, errors } = await checkIfAlreadyOnS3(key, uploadOptions)
+                if (isThere) {
+                    images[url] = {
+                        imageUploaded: true, // not really uploaded but we need to add this status
+                        errors
+                    };
+                    stats.inc(props.imagesAlreadyOnS3);
+                    return
+                }
             }
             const info = await downloadUpload(url, key, uploadOptions, imageCheck);
             stats.add(props.timeSpentDownloading, info.time.downloading);
