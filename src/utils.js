@@ -20,8 +20,11 @@ const converter = (input, output, option) => new Promise((res, rej) => {
 })
 
 module.exports.convertWebpToPng = async (origBuffer, key)=> {
-    const webpKey = `${key}.webp`;
-    const pngKey = `${key}.png`;
+    // sanitize key for slashes
+    const folders = key.split('/')
+    const sanitizedKey = folders[folders.length - 1]
+    const webpKey = `${sanitizedKey}.webp`;
+    const pngKey = `${sanitizedKey}.png`;
     await writeFileAsync(webpKey, origBuffer);
     await converter(webpKey, pngKey, '-o');
     return readFileAsync(pngKey);
