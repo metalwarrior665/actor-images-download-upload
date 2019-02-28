@@ -1,19 +1,26 @@
 module.exports.Stats = class Stats {
-    constructor() {
-        this.itemsTotal = 0;
-        this.itemsSkipped = 0;
-        this.imagesTotal = 0;
-        this.imagesAlreadyOnS3 = 0;
-        this.imagesUploaded = 0;
-        this.imagesFailed = 0;
-        this.imagesDuplicates = 0;
-        this.imagesDownloadedPreviously = 0;
-        this.imagesNotString = 0;
-        this.itemsWithoutImages = 0;
-        this.timeSpentDownloading = 0;
-        this.timeSpentProcessing = 0;
-        this.timeSpentUploading = 0;
-        this.failedInfo = [];
+    constructor(statsState) {
+        if (!statsState) {
+            this.itemsTotal = 0;
+            this.itemsSkipped = 0;
+            this.imagesTotal = 0;
+            this.imagesAlreadyOnS3 = 0;
+            this.imagesUploaded = 0;
+            this.imagesFailed = 0;
+            this.imagesDuplicates = 0;
+            // this.imagesDownloadedPreviously = 0;
+            this.imagesNotString = 0;
+            this.itemsWithoutImages = 0;
+            this.timeSpentDownloading = 0;
+            this.timeSpentProcessing = 0;
+            this.timeSpentUploading = 0;
+            this.failedInfo = [];
+        } else {
+            const { stats } = statsState;
+            Object.keys(stats).forEach((key) => {
+                this[key] = stats[key];
+            });
+        }
     }
 
     inc(prop) {
@@ -70,7 +77,7 @@ module.exports.Stats = class Stats {
             imagesUploaded: 'imagesUploaded',
             imagesFailed: 'imagesFailed',
             imagesDuplicates: 'imagesDuplicates',
-            imagesDownloadedPreviously: 'imagesDownloadedPreviously',
+            // imagesDownloadedPreviously: 'imagesDownloadedPreviously',
             itemsWithoutImages: 'itemsWithoutImages',
             imagesNotString: 'imagesNotString',
             timeSpentDownloading: 'timeSpentDownloading',
