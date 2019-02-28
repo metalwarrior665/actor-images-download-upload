@@ -1,6 +1,8 @@
 ## images-download-upload
 
-Documentation will be available very soon. This actor is still rapidly improving.
+Documentation will be available very soon. This actor is still rapidly improving but functional.
+
+<!---
 
 # google-spreadsheet
 
@@ -127,6 +129,8 @@ To set up the webhook, you need to go to advanced settings of your crawler, find
 Then you need to add an input for the actor to the **Finish webhook data**. It should be a standard JSON input as [specified above](#input) just without the `datasetOrExecutionId` field because it is automatically extracted from the webhook. Simple `Finish webhook data` can look like this:
 
 `{"mode": "append", "spreadsheetId": "1oz8YzfE5gVw84qWAywlugH0ddrkc1FyAe1aEO4TFTjA"}`
+
+-->
 
 
 
