@@ -276,7 +276,7 @@ Apify.main(async () => {
                 maxBlockedMillis: 100,
             },
             systemStatusOptions: {
-                maxEventLoopOverloadedRatio: 0.6,
+                maxEventLoopOverloadedRatio: 0.9,
             },
         },
     });
