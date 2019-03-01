@@ -16,9 +16,8 @@ module.exports.Stats = class Stats {
             this.timeSpentUploading = 0;
             this.failedInfo = [];
         } else {
-            const { stats } = statsState;
-            Object.keys(stats).forEach((key) => {
-                this[key] = stats[key];
+            Object.keys(statsState).forEach((key) => {
+                this[key] = statsState[key];
             });
         }
     }

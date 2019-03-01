@@ -90,10 +90,10 @@ Apify.main(async () => {
     console.log('images loaded from state:');
     console.log(`Uploaded: ${Object.values(images).filter((val) => val.imageUploaded).length}`);
     console.log(`Failed: ${Object.values(images).filter((val) => val.imageUploaded === false).length}`);
-    console.log(`Total: ${Object.values(images).filter((val) => val.imageUploaded === undefined).length}`);
+    console.log(`Not yet handled: ${Object.values(images).filter((val) => val.imageUploaded === undefined).length}`);
 
     // Stats init
-    const statsState = await Apify.getValue('stats');
+    const statsState = await Apify.getValue('stats-state');
     const stats = new Stats(statsState);
     stats.display();
     const props = stats.getProps();
@@ -226,7 +226,7 @@ Apify.main(async () => {
     // periodially displaying stats
     const statsInterval = setInterval(async () => {
         stats.display();
-        await Apify.setValue('stats', stats.return());
+        await Apify.setValue('stats-state', stats.return());
     }, 10 * 1000);
 
     // SAVING STATE
@@ -269,6 +269,7 @@ Apify.main(async () => {
 
     // Saving STATE for last time
     await Apify.setValue('STATE', images);
+    await Apify.setValue('stats-state', stats.return());
     clearInterval(stateInterval);
     clearInterval(statsInterval);
     stats.display();
