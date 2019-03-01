@@ -41,7 +41,7 @@ Apify.main(async () => {
         postDownloadFunction = defaultPostDownloadFunction,
         loadState,
         maxItems,
-        // concurrency,
+        concurrency,
         flatten,
         imageCheckType,
         imageCheckMinSize,
@@ -279,6 +279,7 @@ Apify.main(async () => {
                 maxEventLoopOverloadedRatio: 0.9,
             },
         },
+        maxConcurrency: concurrency,
     });
 
     await crawler.run();

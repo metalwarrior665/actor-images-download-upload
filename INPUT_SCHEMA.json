@@ -67,10 +67,10 @@
             "minimum": 1
         },
         "concurrency":{
-            "title": "Concurrency",
+            "title": "Max concurrency",
             "type": "integer",
-            "description": "You can specify how many parallel downloading/uploading requests will be running. Keep in mind that the limit is here to not overload the host server.",
-            "default": 10
+            "description": "You can specify how many maximum parallel downloading/uploading requests will be running. Keep in mind that the limit is here to not overload the host server.",
+            "default": 40
         },
         "flatten":{
             "title": "Flatten",
