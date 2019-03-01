@@ -6,6 +6,6 @@ Apify.main(async () => {
         url: 'https://cdn.laredoute.com/products/7/d/c/7dcb0dsfsdf27110a461bc1d611d905122b07.jpg',
         resolveWithFullResponse: true,
     });
-    await Apify.setValue('res', response.body, {contentType: 'text/html'});
+    await Apify.setValue('res', response.body, { contentType: 'text/html' });
     console.log(typeof response.statusCode);
 });

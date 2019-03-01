@@ -1,5 +1,5 @@
 const Apify = require('apify');
-const Promise = require('bluebird');
+// const Promise = require('bluebird');
 const objectPath = require('object-path');
 const R = require('ramda');
 const md5 = require('md5');
@@ -41,7 +41,7 @@ Apify.main(async () => {
         postDownloadFunction = defaultPostDownloadFunction,
         loadState,
         maxItems,
-        concurrency,
+        // concurrency,
         flatten,
         imageCheckType,
         imageCheckMinSize,
@@ -234,6 +234,48 @@ Apify.main(async () => {
         await Apify.setValue('STATE', images);
     }, 10 * 1000);
 
+    const requestList = new Apify.RequestList({ sources: Object.keys(images).map((url, index) => ({ url, userData: { index } })) });
+    await requestList.initialize();
+
+    const handleRequestFunction = async ({ request }) => {
+        const { url } = request;
+        const { index } = request.userData;
+
+        if (typeof images[url].imageUploaded === 'boolean') return; // means it was already download before
+        const itemOfImage = inputData[images[url].itemIndex];
+        const key = fileNameFunction(url, md5, index, itemOfImage);
+        if (s3CheckIfAlreadyThere && uploadTo === 's3') {
+            const { isThere, errors } = await checkIfAlreadyOnS3(key, uploadOptions);
+            if (isThere) {
+                images[url] = {
+                    imageUploaded: true, // not really uploaded but we need to add this status
+                    errors,
+                };
+                stats.inc(props.imagesAlreadyOnS3);
+                return;
+            }
+        }
+        const info = await downloadUpload(url, key, uploadOptions, imageCheck);
+        stats.add(props.timeSpentDownloading, info.time.downloading);
+        stats.add(props.timeSpentProcessing, info.time.processing);
+        stats.add(props.timeSpentUploading, info.time.uploading);
+        images[url] = info;
+        if (info.imageUploaded) {
+            stats.inc(props.imagesUploaded);
+        } else {
+            stats.inc(props.imagesFailed);
+            stats.addFailed({ url, errors: info.errors });
+        }
+    };
+
+    const crawler = new Apify.BasicCrawler({
+        requestList,
+        handleRequestFunction,
+    });
+
+    await crawler.run();
+
+    /*
     // parrallel download/upload processing
     await Promise.map(
         Object.keys(images),
@@ -266,6 +308,7 @@ Apify.main(async () => {
         },
         { concurrency },
     );
+    */
 
     // Saving STATE for last time
     await Apify.setValue('STATE', images);
