@@ -32,7 +32,7 @@ Apify.main(async () => {
 
     const {
         uploadTo,
-        pathToImageUrls,
+        pathToImageUrls = '',
         inputId,
         recordKey,
         outputTo,
@@ -175,7 +175,7 @@ Apify.main(async () => {
     try {
         inputData.forEach((item, itemIndex) => {
             if (item.skipDownload) return; // we skip item with this field
-            let imagesFromPath = objectPath.get(item, pathToImageUrls)
+            let imagesFromPath = objectPath.get(item, pathToImageUrls);
             if (!Array.isArray(imagesFromPath) && typeof imagesFromPath !== 'string') {
                 stats.inc(props.itemsWithoutImages);
                 return;
