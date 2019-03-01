@@ -11,24 +11,26 @@ const readFileAsync = promisify(fs.readFile);
 
 const converter = (input, output, option) => new Promise((res, rej) => {
     webp.dwebp(input, output, option, (status, err) => {
-        if (err) {
+        if (status === '101') {
             rej(err);
+        } else if (status === '100') {
+            res(status);
         } else {
-            res(status)
+            rej(new Error(`Unknown status: ${status}, Error: ${err}`));
         }
-    })
-})
+    });
+});
 
-module.exports.convertWebpToPng = async (origBuffer, key)=> {
+module.exports.convertWebpToPng = async (origBuffer, key) => {
     // sanitize key for slashes
-    const folders = key.split('/')
-    const sanitizedKey = folders[folders.length - 1]
+    const folders = key.split('/');
+    const sanitizedKey = folders[folders.length - 1];
     const webpKey = `${sanitizedKey}.webp`;
     const pngKey = `${sanitizedKey}.png`;
     await writeFileAsync(webpKey, origBuffer);
     await converter(webpKey, pngKey, '-o');
     return readFileAsync(pngKey);
-}
+};
 
 
 module.exports.hideTokenFromInput = (input) => {
@@ -37,13 +39,13 @@ module.exports.hideTokenFromInput = (input) => {
 };
 
 module.exports.checkIfImage = async (response, imageCheck) => {
-    try{
+    try {
         if (!response) {
             return {
                 isImage: false,
-                error: `No response object, probably crashed`,
+                error: 'No response object, probably crashed',
                 retry: false,
-            }
+            };
         }
 
         const { statusCode } = response;
@@ -53,16 +55,17 @@ module.exports.checkIfImage = async (response, imageCheck) => {
                 isImage: false,
                 error: statusCode,
                 retry: false,
-            }
-        } else if (statusCode >= 400) {
+            };
+        }
+        if (statusCode >= 400) {
             return {
                 isImage: false,
                 error: statusCode,
                 retry: true,
-            }
+            };
         }
 
-        const buffer = response.body
+        const buffer = response.body;
         let contentType;
 
         if (imageCheck.type === 'content-type' || imageCheck.type === 'image-size') {
@@ -78,7 +81,7 @@ module.exports.checkIfImage = async (response, imageCheck) => {
         }
 
         // first we check buffer size
-        const imageSizeInKB = Math.floor(buffer.length / 1024)
+        const imageSizeInKB = Math.floor(buffer.length / 1024);
         if (imageSizeInKB < imageCheck.minSize) {
             return {
                 isImage: false,
@@ -92,7 +95,7 @@ module.exports.checkIfImage = async (response, imageCheck) => {
             if (width < imageCheck.minWidth || height < imageCheck.minHeight) {
                 return {
                     isImage: false,
-                    error: `Image width or height is too small. Actual: width: ${width}, height: ${height}. Minimum: width: ${imageCheck.minWidth}, height: ${imageCheck.minHeight} `,
+                    error: `Image width or height is too small. Actual: width: ${width}, height: ${height}. Minimum: width: ${imageCheck.minWidth}, height: ${imageCheck.minHeight} `,  // eslint-disable-line
                     retry: false,
                 };
             }
@@ -105,7 +108,7 @@ module.exports.checkIfImage = async (response, imageCheck) => {
     } catch (e) {
         return {
             isImage: false,
-            error: `Image check crashed. Error: ${e.message}`,
+            error: `Image check crashed. Error: ${e}`,
             retry: false,
         };
     }

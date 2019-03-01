@@ -2,7 +2,7 @@ const Apify = require('apify');
 const rp = require('request-fixed-tunnel-agent');
 
 const { PROXY_URL, REQUEST_EXTERNAL_TIMEOUT } = require('./constants');
-const { checkIfImage, convertWebpToPng  } = require('./utils');
+const { checkIfImage, convertWebpToPng } = require('./utils');
 
 const deduplicateErrors = (errors) => {
     return errors.reduce((newErrors, error) => {
@@ -59,7 +59,7 @@ const download = async (url, imageCheck, key) => {
     let contentTypeMain;
 
     const handleError = (e) => {
-        errors.push(`${e.message}`);
+        errors.push(e.toString());
     };
 
     const sendRequest = async (options) => {
@@ -90,7 +90,7 @@ const download = async (url, imageCheck, key) => {
             errors.push(error);
         } else {
             imageDownloaded = true;
-            contentTypeMain = contentType
+            contentTypeMain = contentType;
         }
 
         if (!retry) break;
@@ -98,12 +98,12 @@ const download = async (url, imageCheck, key) => {
 
     // converting to other mime
     if (imageDownloaded && contentTypeMain === 'image/webp' && imageCheck.convertWebpToPng) {
-        const startProcessing = Date.now()
+        const startProcessing = Date.now();
         try {
-            response.body = await convertWebpToPng(response.body, key)
+            response.body = await convertWebpToPng(response.body, key);
         } catch (e) {
             imageDownloaded = false;
-            errors.push('Error in converting:', e.message);
+            errors.push(`Error in converting: ${e}`);
         }
         timeProcessing += Date.now() - startProcessing;
     }
