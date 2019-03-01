@@ -271,6 +271,14 @@ Apify.main(async () => {
     const crawler = new Apify.BasicCrawler({
         requestList,
         handleRequestFunction,
+        autoscaledPoolOptions: {
+            snapshotterOptions: {
+                maxBlockedMillis: 100,
+            },
+            systemStatusOptions: {
+                maxEventLoopOverloadedRatio: 0.6,
+            },
+        },
     });
 
     await crawler.run();
