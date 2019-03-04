@@ -109,6 +109,7 @@ Apify.main(async () => {
     }, 10 * 1000);
 
     let processedState = await Apify.getValue('processed-state');
+    const initialPushingState = (await Apify.getValue('PUSHING-STATE')) || 0;
 
     // LOADING FROM KV
     if (input.storeId) {
@@ -260,6 +261,8 @@ Apify.main(async () => {
 
         await crawler.run();
 
+        console.log(`All images in iteration ${iterationIndex} were processed`);
+
         // postprocessing function
         if ((outputTo && outputTo !== 'no-output')) {
             console.log('Will save output data to:', outputTo);
@@ -269,13 +272,14 @@ Apify.main(async () => {
             console.log('Post-download processed data length:', processedData.length);
 
             if (outputTo === 'key-value-store') {
-                await Apify.setValue('OUTPUT', processedData);
+                const alreadySavedData = (await Apify.getValue('OUTPUT')) || [];
+                await Apify.setValue('OUTPUT', alreadySavedData.concat(processedData));
             }
 
             // Have to save state of dataset push because it takes too long
             if (outputTo === 'dataset') {
                 const chunkSize = 500;
-                let index = await Apify.getValue('PUSHING-STATE').then((res) => res ? res.index : 0); // eslint-disable-line
+                let index = (await Apify.getValue('PUSHING-STATE')) || 0; // eslint-disable-line
                 console.log(`Loaded starting index: ${index}`);
                 const alreadyIterated = iterationIndex * DATASET_BATCH_SIZE;
                 const ceil = processedData.length + alreadyIterated;
@@ -283,12 +287,12 @@ Apify.main(async () => {
                     console.log(`pushing data ${index}:${index + chunkSize}`);
                     await Promise.all([
                         Apify.pushData(processedData.slice(index - alreadyIterated, index + chunkSize - alreadyIterated)),
-                        Apify.setValue('PUSHING-STATE', { index: index + chunkSize })
+                        Apify.setValue('PUSHING-STATE', index + chunkSize),
                     ]);
                 }
 
                 // saving PUSHING-STATE for last time
-                await Apify.setValue('PUSHING-STATE', { index });
+                await Apify.setValue('PUSHING-STATE', index);
             }
         }
     };
@@ -307,7 +311,14 @@ Apify.main(async () => {
             const type = isDataset ? 'dataset' : 'crawler';
             const { itemCount } = await Apify.client.datasets.getDataset({ datasetId: inputId });
             stats.set(props.itemsTotal, itemCount, true);
-            await loadItems({ id: inputId, type, callback: mainProcess });
+            const iterationIndex = Math.floor(initialPushingState / DATASET_BATCH_SIZE);
+            await loadItems({
+                id: inputId,
+                type,
+                callback: mainProcess,
+                offset: iterationIndex * DATASET_BATCH_SIZE,
+                iterationIndex,
+            });
         } else {
             const keyValueStore = await Apify.client.keyValueStores.getRecord({
                 key: recordKey, storeId: inputId,
