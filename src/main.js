@@ -312,13 +312,11 @@ Apify.main(async () => {
             const { itemCount } = await Apify.client.datasets.getDataset({ datasetId: inputId });
             stats.set(props.itemsTotal, itemCount, true);
             const iterationIndex = Math.floor(initialPushingState / DATASET_BATCH_SIZE);
-            await loadItems({
-                id: inputId,
-                type,
-                callback: mainProcess,
-                offset: iterationIndex * DATASET_BATCH_SIZE,
+            console.log(`Starting iteration index: ${iterationIndex}`);
+            await loadItems({ id: inputId, type, callback: mainProcess },
+                iterationIndex * DATASET_BATCH_SIZE,
                 iterationIndex,
-            });
+            );
         } else {
             const keyValueStore = await Apify.client.keyValueStores.getRecord({
                 key: recordKey, storeId: inputId,
