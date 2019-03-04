@@ -210,7 +210,7 @@ Apify.main(async () => {
 
         if (!processedState || iterationIndex >= processedState) {
             processedState = iterationIndex;
-            await Apify.setValue('processed-state', { processedState: iterationIndex });
+            await Apify.setValue('processed-state', processedState);
         }
 
         const handleRequestFunction = async ({ request }) => {
