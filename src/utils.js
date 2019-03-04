@@ -6,7 +6,7 @@ const webp = require('webp-converter');
 const fs = require('fs');
 const { promisify } = require('util');
 
-const { DATASET_BATCH_SIZE } = require('constants');
+const { DATASET_BATCH_SIZE } = require('./constants.js');
 
 const writeFileAsync = promisify(fs.writeFile);
 const readFileAsync = promisify(fs.readFile);
