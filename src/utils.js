@@ -147,15 +147,16 @@ module.exports.getObjectWithAllKeysFromS3 = async (s3, domain) => {
     }
 };
 
-module.exports.loadItems = async (id, offset, items, type) => {
+const loadItems = async ({ id, type, callback }, offset = 0, items = [], iterationIndex = 0) => {
     let newItems;
+    const limit = 50000;
     if (type === 'dataset') {
         console.log('loading from dataset');
         newItems = await Apify.client.datasets.getItems({
             datasetId: id,
             offset,
-            limit: 100000,
-        }).catch(console.log);
+            limit,
+        }).then((res) => res.items).catch(console.log);
     } else if (type === 'crawler') {
         console.log('loading from crawler');
         newItems = await Apify.client.crawlers.getExecutionResults({
@@ -163,10 +164,12 @@ module.exports.loadItems = async (id, offset, items, type) => {
             simplified: 1,
             skipFailedPages: 1,
             offset,
-            limit: 100000,
-        }).catch(console.log);
+            limit,
+        }).then((res) => res.items).catch(console.log);
     }
-    if (!newItems || !newItems.items || newItems.items.length === 0) return items;
-    items = items.concat(newItems.items);
-    return module.exports.loadItems(id, offset + 100000, items, type);
+    if (!newItems || newItems.length === 0) return;
+    await callback(newItems, iterationIndex);
+    await loadItems({ id, type, callback }, offset + limit, items, iterationIndex + 1);
 };
+
+module.exports.loadItems = loadItems;
