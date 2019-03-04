@@ -9,6 +9,7 @@ const { loadItems, getObjectWithAllKeysFromS3, setS3, hideTokenFromInput } = req
 const { defaultFileNameFunction, defaultPostDownloadFunction } = require('./default-functions');
 const { downloadUpload } = require('./download-upload');
 const { checkInput } = require('./input-parser');
+const { DATASET_BATCH_SIZE } = require('./constants.js');
 
 Apify.main(async () => {
     // Get input of your act
@@ -270,7 +271,7 @@ Apify.main(async () => {
                 const chunkSize = 500;
                 let index = await Apify.getValue('PUSHING-STATE').then((res) => res ? res.index : 0); // eslint-disable-line
                 console.log(`Loaded starting index: ${index}`);
-                const alreadyIterated = iterationIndex * 50000;
+                const alreadyIterated = iterationIndex * DATASET_BATCH_SIZE;
                 const ceil = processedData.length + alreadyIterated;
                 for (; index < ceil; index += chunkSize) {
                     console.log(`pushing data ${index}:${index + chunkSize}`);

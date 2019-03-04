@@ -6,6 +6,8 @@ const webp = require('webp-converter');
 const fs = require('fs');
 const { promisify } = require('util');
 
+const { DATASET_BATCH_SIZE } = require('constants');
+
 const writeFileAsync = promisify(fs.writeFile);
 const readFileAsync = promisify(fs.readFile);
 
@@ -149,7 +151,7 @@ module.exports.getObjectWithAllKeysFromS3 = async (s3, domain) => {
 
 const loadItems = async ({ id, type, callback }, offset = 0, items = [], iterationIndex = 0) => {
     let newItems;
-    const limit = 50000;
+    const limit = DATASET_BATCH_SIZE;
     if (type === 'dataset') {
         console.log('loading from dataset');
         newItems = await Apify.client.datasets.getItems({
