@@ -149,7 +149,7 @@ module.exports.getObjectWithAllKeysFromS3 = async (s3, domain) => {
     }
 };
 
-const loadItems = async ({ id, type, callback }, offset = 0, items = [], iterationIndex = 0) => {
+const loadItems = async ({ id, type, callback }, offset = 0, iterationIndex = 0, items = []) => {
     let newItems;
     const limit = DATASET_BATCH_SIZE;
     if (type === 'dataset') {
@@ -171,7 +171,7 @@ const loadItems = async ({ id, type, callback }, offset = 0, items = [], iterati
     }
     if (!newItems || newItems.length === 0) return;
     await callback(newItems, iterationIndex);
-    await loadItems({ id, type, callback }, offset + limit, items, iterationIndex + 1);
+    await loadItems({ id, type, callback }, offset + limit, iterationIndex + 1, items);
 };
 
 module.exports.loadItems = loadItems;
