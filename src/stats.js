@@ -22,21 +22,24 @@ module.exports.Stats = class Stats {
         }
     }
 
-    inc(prop) {
+    inc(prop, updateStats) {
+        if (!updateStats) return;
         if (this[prop] == null) {
             throw new Error(`Property ${prop} is not initiated in the Stats class so it cannot be incremented!`);
         }
         this[prop]++;
     }
 
-    add(prop, count) {
+    add(prop, count, updateStats) {
+        if (!updateStats) return;
         if (this[prop] == null) {
             throw new Error(`Property ${prop} is not initiated in the Stats class so it cannot be incremented!`);
         }
         this[prop] += count;
     }
 
-    set(prop, val) {
+    set(prop, val, updateStats) {
+        if (!updateStats) return;
         if (this[prop] == null) {
             throw new Error(`Property ${prop} is not initiated in the Stats class so it cannot be incremented!`);
         }

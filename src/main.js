@@ -108,12 +108,15 @@ Apify.main(async () => {
         await Apify.setValue('STATE', images);
     }, 10 * 1000);
 
+    let processedState = await Apify.getValue('processed-state');
+
     // LOADING FROM KV
     if (input.storeId) {
         console.log('Loading from kv');
     }
 
     const mainProcess = async (inputData, iterationIndex) => {
+        const updateStats = !processedState || processedState < iterationIndex;
         if (inputData.length === 0) {
             throw new Error('We loaded no data from the specified inputId, aborting the run!');
         }
@@ -128,8 +131,6 @@ Apify.main(async () => {
             }
         }
         inputData = inputData.slice(0, maxItems);
-
-        stats.add(props.itemsTotal, inputData.length);
 
         if (inputData.length === 0) throw new Error("Didn't load any items from kv store or dataset");
 
@@ -150,7 +151,7 @@ Apify.main(async () => {
         }
 
         const itemsSkippedCount = inputData.filter((item) => !!item.skipDownload).length;
-        stats.add(props.itemsSkipped, itemsSkippedCount);
+        stats.add(props.itemsSkipped, itemsSkippedCount, updateStats);
 
         // add images to state
         try {
@@ -158,20 +159,20 @@ Apify.main(async () => {
                 if (item.skipDownload) return; // we skip item with this field
                 let imagesFromPath = objectPath.get(item, pathToImageUrls);
                 if (!Array.isArray(imagesFromPath) && typeof imagesFromPath !== 'string') {
-                    stats.inc(props.itemsWithoutImages);
+                    stats.inc(props.itemsWithoutImages, updateStats);
                     return;
                 }
                 if (typeof imagesFromPath === 'string') {
                     imagesFromPath = [imagesFromPath];
                 }
                 if (imagesFromPath.length === 0) {
-                    stats.inc(props.itemsWithoutImages);
+                    stats.inc(props.itemsWithoutImages, updateStats);
                     return;
                 }
                 imagesFromPath.forEach((image) => {
-                    stats.inc(props.imagesTotal);
+                    stats.inc(props.imagesTotal, updateStats);
                     if (typeof image !== 'string') {
-                        stats.inc(props.imagesNotString);
+                        stats.inc(props.imagesNotString, updateStats);
                         return;
                     }
                     if (images[image] === undefined) { // undefined means they were not yet added
@@ -179,9 +180,9 @@ Apify.main(async () => {
                             itemIndex,
                         }; // false means they were not yet downloaded / uploaded or the process failed
                     } else if (typeof images[image] === 'object' && images[image].fromState) {
-                        // stats.inc(props.imagesDownloadedPreviously);
+                        // stats.inc(props.imagesDownloadedPreviously, updateStats);
                     } else {
-                        stats.inc(props.imagesDuplicates);
+                        stats.inc(props.imagesDuplicates, updateStats);
                     }
                 });
             });
@@ -207,6 +208,11 @@ Apify.main(async () => {
         const requestList = new Apify.RequestList({ sources: Object.keys(images).map((url, index) => ({ url, userData: { index } })) });
         await requestList.initialize();
 
+        if (!processedState || iterationIndex >= processedState) {
+            processedState = iterationIndex;
+            await Apify.setValue('processed-state', { processedState: iterationIndex });
+        }
+
         const handleRequestFunction = async ({ request }) => {
             const { url } = request;
             const { index } = request.userData;
@@ -226,14 +232,14 @@ Apify.main(async () => {
                 }
             }
             const info = await downloadUpload(url, key, uploadOptions, imageCheck);
-            stats.add(props.timeSpentDownloading, info.time.downloading);
-            stats.add(props.timeSpentProcessing, info.time.processing);
-            stats.add(props.timeSpentUploading, info.time.uploading);
+            stats.add(props.timeSpentDownloading, info.time.downloading, true);
+            stats.add(props.timeSpentProcessing, info.time.processing, true);
+            stats.add(props.timeSpentUploading, info.time.uploading, true);
             images[url] = info;
             if (info.imageUploaded) {
-                stats.inc(props.imagesUploaded);
+                stats.inc(props.imagesUploaded, true);
             } else {
-                stats.inc(props.imagesFailed);
+                stats.inc(props.imagesFailed, true);
                 stats.addFailed({ url, errors: info.errors });
             }
         };
@@ -299,6 +305,8 @@ Apify.main(async () => {
 
         if (isDataset || isCrawler) {
             const type = isDataset ? 'dataset' : 'crawler';
+            const { itemCount } = await Apify.client.datasets.getDataset({ datasetId: inputId });
+            stats.set(props.itemsTotal, itemCount, true);
             await loadItems({ id: inputId, type, callback: mainProcess });
         } else {
             const keyValueStore = await Apify.client.keyValueStores.getRecord({
@@ -306,6 +314,7 @@ Apify.main(async () => {
             }).catch(() => console.log('Key value store or record inside him not found, we cannot continue'));
             if (keyValueStore && Array.isArray(keyValueStore.body)) {
                 console.log('We got items from kv, count:', keyValueStore.body.length);
+                stats.set(props.itemsTotal, keyValueStore.body.length, true);
                 await mainProcess(keyValueStore.body);
             } else {
                 console.log('We cannot load data from kv store because they are not in a proper format');
