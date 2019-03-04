@@ -129,7 +129,7 @@ Apify.main(async () => {
         }
         inputData = inputData.slice(0, maxItems);
 
-        stats.set(props.itemsTotal, inputData.length);
+        stats.add(props.itemsTotal, inputData.length);
 
         if (inputData.length === 0) throw new Error("Didn't load any items from kv store or dataset");
 
@@ -150,7 +150,7 @@ Apify.main(async () => {
         }
 
         const itemsSkippedCount = inputData.filter((item) => !!item.skipDownload).length;
-        stats.set(props.itemsSkipped, itemsSkippedCount);
+        stats.add(props.itemsSkipped, itemsSkippedCount);
 
         // add images to state
         try {
@@ -275,8 +275,10 @@ Apify.main(async () => {
                 const ceil = processedData.length + alreadyIterated;
                 for (; index < ceil; index += chunkSize) {
                     console.log(`pushing data ${index}:${index + chunkSize}`);
-                    await Apify.pushData(processedData.slice(index - alreadyIterated, index + chunkSize - alreadyIterated));
-                    await Apify.setValue('PUSHING-STATE', { index: index + chunkSize });
+                    await Promise.all([
+                        Apify.pushData(processedData.slice(index - alreadyIterated, index + chunkSize - alreadyIterated)),
+                        Apify.setValue('PUSHING-STATE', { index: index + chunkSize })
+                    ]);
                 }
 
                 // saving PUSHING-STATE for last time
