@@ -253,18 +253,18 @@ Apify.main(async () => {
                     stats.addFailed({ url, errors: info.errors });
                 }
             };
-            const timeoutPromise = new Promise((resolve, reject) => {
-                setTimeout(() => {
-                    console.log('Handle function timeouted');
-                    stats.inc(props.imagesFailed, true);
-                    stats.addFailed({ url, errors: ['Handle function timeout! Code got stuck somewhere probably'] });
-                    resolve();
-                }, handleTimeout);
-            });
-            await Promise.race([
-                mainPromise,
-                timeoutPromise,
-            ]);
+            const timeoutPromise = new Promise((resolve, reject) => setTimeout(reject, handleTimeout));
+
+            try {
+                await Promise.race([
+                    mainPromise(),
+                    timeoutPromise,
+                ]);
+            } catch (e) {
+                console.log('Handle function timeouted');
+                stats.inc(props.imagesFailed, true);
+                stats.addFailed({ url, errors: ['Handle function timeout! Code got stuck somewhere probably'] });
+            }
         };
 
         const crawler = new Apify.BasicCrawler({
