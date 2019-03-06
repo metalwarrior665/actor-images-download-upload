@@ -52,7 +52,6 @@ const download = async (url, imageCheck, key, downloadOptions) => {
         ...normalOptions,
         proxy: PROXY_URL,
     };
-    let errorsCount = 0;
     const errors = [];
     let imageDownloaded = false;
     let response;
@@ -72,21 +71,21 @@ const download = async (url, imageCheck, key, downloadOptions) => {
     let timeDownloading = 0;
     let timeProcessing = 0;
 
-    while (!imageDownloaded && errorsCount < imageCheck.maxRetries) {
+    while (!imageDownloaded && errors.length < downloadOptions.maxRetries) {
         const startDownloading = Date.now();
-        if (errorsCount > 0) {
+        if (errors.length > 0) {
             response = await sendRequest(proxyOptions);
         } else {
             response = await sendRequest(normalOptions);
         }
         timeDownloading += Date.now() - startDownloading;
+        if (!response) continue; // eslint-disable-line
 
         const startProcessing = Date.now();
         const { isImage, error, retry, contentType } = await checkIfImage(response, imageCheck);
         timeProcessing += Date.now() - startProcessing;
 
         if (!isImage) {
-            errorsCount++;
             errors.push(error);
         } else {
             imageDownloaded = true;

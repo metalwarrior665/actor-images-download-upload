@@ -62,7 +62,6 @@ Apify.main(async () => {
         minSize: imageCheckMinSize,
         minWidth: imageCheckMinWidth,
         minHeight: imageCheckMinHeight,
-        maxRetries: imageCheckMaxRetries,
         convertWebpToPng,
     };
     const s3Credentials = { s3Bucket, s3AccessKeyId, s3SecretAccessKey };
@@ -72,6 +71,7 @@ Apify.main(async () => {
     };
     const downloadOptions = {
         downloadTimeout,
+        maxRetries: imageCheckMaxRetries,
     };
     const downloadUploadOptions = { downloadOptions, uploadOptions };
 
