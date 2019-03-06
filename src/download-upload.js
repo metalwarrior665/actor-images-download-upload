@@ -42,7 +42,7 @@ const upload = async (key, buffer, uploadOptions) => {
     };
 };
 
-const download = async (url, imageCheck, key) => {
+const download = async (url, imageCheck, key, downloadOptions) => {
     const normalOptions = {
         url,
         encoding: null,
@@ -65,7 +65,7 @@ const download = async (url, imageCheck, key) => {
     const sendRequest = async (options) => {
         return Promise.race([
             rp(options),
-            new Promise((resolve, reject) => setTimeout(() => reject(new Error('Timeouted')), REQUEST_EXTERNAL_TIMEOUT)),
+            new Promise((resolve, reject) => setTimeout(() => reject(new Error('Timeouted')), downloadOptions.downloadTimeout || REQUEST_EXTERNAL_TIMEOUT)),
         ]).catch(handleError);
     };
 
@@ -117,7 +117,8 @@ const download = async (url, imageCheck, key) => {
     };
 };
 
-module.exports.downloadUpload = async (url, key, uploadOptions, imageCheck) => {
+module.exports.downloadUpload = async (url, key, downloadUploadOptions, imageCheck) => {
+    const { downloadOptions, uploadOptions } = downloadUploadOptions;
     const errors = [];
     const time = {
         downloading: 0,
@@ -140,7 +141,7 @@ module.exports.downloadUpload = async (url, key, uploadOptions, imageCheck) => {
         imageDownloaded,
         timeDownloading,
         timeProcessing,
-    } = await download(url, imageCheck, key);
+    } = await download(url, imageCheck, key, downloadOptions);
 
     time.downloading = timeDownloading;
     time.processing = timeProcessing;

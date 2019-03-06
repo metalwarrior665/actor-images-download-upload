@@ -135,6 +135,11 @@
             "title": "Check if key is already on S3",
             "type": "boolean",
             "description": "This option is useful if you don't want to rewrite the same image. GET requests are also cheaper than PUT requests"
+        },
+        "downloadTimeout": {
+            "title": "Download timeout",
+            "type": "number",
+            "description": "How long we will wait to download each image"
         }
     }
 }

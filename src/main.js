@@ -54,6 +54,7 @@ Apify.main(async () => {
         s3SecretAccessKey,
         s3CheckIfAlreadyThere,
         convertWebpToPng,
+        downloadTimeout,
     } = input;
 
     const imageCheck = {
@@ -69,6 +70,10 @@ Apify.main(async () => {
         uploadTo,
         s3Client: uploadTo === 's3' ? setS3(s3Credentials) : null,
     };
+    const downloadOptions = {
+        downloadTimeout,
+    };
+    const downloadUploadOptions = { downloadOptions, uploadOptions };
 
     console.log('loading state...');
 
@@ -232,7 +237,7 @@ Apify.main(async () => {
                     return;
                 }
             }
-            const info = await downloadUpload(url, key, uploadOptions, imageCheck);
+            const info = await downloadUpload(url, key, downloadUploadOptions, imageCheck);
             stats.add(props.timeSpentDownloading, info.time.downloading, true);
             stats.add(props.timeSpentProcessing, info.time.processing, true);
             stats.add(props.timeSpentUploading, info.time.uploading, true);
