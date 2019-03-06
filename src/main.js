@@ -317,6 +317,8 @@ Apify.main(async () => {
                 await Apify.setValue('PUSHING-STATE', index);
             }
         }
+        console.log('END OF ITERATION STATS:');
+        stats.display();
     };
 
     // LOADING FROM ANYWHERE
