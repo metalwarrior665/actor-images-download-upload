@@ -138,8 +138,9 @@
         },
         "downloadTimeout": {
             "title": "Download timeout",
-            "type": "number",
-            "description": "How long we will wait to download each image"
+            "type": "integer",
+            "description": "How long we will wait to download each image",
+            "minimum": 100
         }
     }
 }
