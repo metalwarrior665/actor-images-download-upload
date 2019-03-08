@@ -1,4 +1,5 @@
-FROM apify/actor-node-chrome
+# FROM apify/actor-node-chrome
+FROM malteautopi/python2-nodejs:latest
 
 # Copy all files and directories from the directory to the Docker image
 COPY . ./
