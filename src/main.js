@@ -309,7 +309,7 @@ Apify.main(async () => {
         });
 
         const dumpBuff = fs.readFileSync(dumpPath);
-        await Apify.setValue(dumpName, dumpBuff);
+        await Apify.setValue(dumpName, dumpBuff, { contentType: 'application/octet-stream' });
 
         // postprocessing function
         if ((outputTo && outputTo !== 'no-output')) {
