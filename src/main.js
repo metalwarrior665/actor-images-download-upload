@@ -249,7 +249,7 @@ Apify.main(async () => {
                             imageUploaded: true, // not really uploaded but we need to add this status
                             errors,
                         };
-                        stats.inc(props.imagesAlreadyOnS3);
+                        stats.inc(props.imagesAlreadyOnS3, true);
                         return;
                     }
                 }
