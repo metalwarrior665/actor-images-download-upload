@@ -4,6 +4,7 @@ const R = require('ramda');
 const md5 = require('md5');
 
 const path = require('path');
+const fs = require('fs');
 const sizeof = require('object-sizeof');
 const heapdump = require('heapdump');
 
@@ -300,9 +301,15 @@ Apify.main(async () => {
 
         console.log(`All images in iteration ${iterationIndex} were processed`);
 
-        heapdump.writeSnapshot(path.join(__dirname, `../snapshots/${Date.now()}-${iterationIndex}.heapsnapshot`), (err, filename) => {
+        const dumpName = `${Date.now()}-${iterationIndex}.heapsnapshot`;
+        const dumpPath = path.join(__dirname, dumpName);
+
+        heapdump.writeSnapshot(dumpPath, (err, filename) => {
             console.log('snapshot written:', err, filename);
         });
+
+        const dumpBuff = fs.readFileSync(dumpPath);
+        await Apify.setValue(dumpName, dumpBuff);
 
         // postprocessing function
         if ((outputTo && outputTo !== 'no-output')) {
