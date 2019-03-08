@@ -1,11 +1,16 @@
 const Apify = require('apify');
-// const Promise = require('bluebird');
 const objectPath = require('object-path');
 const R = require('ramda');
 const md5 = require('md5');
 
+const path = require('path');
+const sizeof = require('object-sizeof');
+const heapdump = require('heapdump');
+
+const sizeofMb = (obj) => (sizeof(obj) / (1024 * 1024)).toFixed(4);
+
 const { Stats } = require('./stats');
-const { loadItems, getObjectWithAllKeysFromS3, setS3, hideTokenFromInput } = require('./utils');
+const { loadItems, setS3, hideTokenFromInput } = require('./utils');
 const { defaultFileNameFunction, defaultPostDownloadFunction } = require('./default-functions');
 const { downloadUpload } = require('./download-upload');
 const { checkInput } = require('./input-parser');
@@ -43,19 +48,21 @@ Apify.main(async () => {
         loadState,
         maxItems,
         concurrency,
-        flatten,
+        flatten = false,
         imageCheckType,
         imageCheckMinSize,
         imageCheckMinWidth,
         imageCheckMinHeight,
-        imageCheckMaxRetries,
+        imageCheckMaxRetries = 1,
         s3Bucket,
         s3AccessKeyId,
         s3SecretAccessKey,
         s3CheckIfAlreadyThere,
         convertWebpToPng,
-        downloadTimeout,
-        handleFunctionTimeout,
+        downloadTimeout = REQUEST_EXTERNAL_TIMEOUT,
+        handleFunctionTimeout = 60 * 1000,
+        batchSize = DATASET_BATCH_SIZE,
+        measureTimes = false,
     } = input;
 
     const imageCheck = {
@@ -71,12 +78,10 @@ Apify.main(async () => {
         s3Client: uploadTo === 's3' ? setS3(s3Credentials) : null,
     };
     const downloadOptions = {
-        downloadTimeout: downloadTimeout || REQUEST_EXTERNAL_TIMEOUT,
+        downloadTimeout,
         maxRetries: imageCheckMaxRetries,
     };
-    const downloadUploadOptions = { downloadOptions, uploadOptions };
-    const handleTimeout = handleFunctionTimeout || downloadOptions.downloadTimeout * imageCheckMaxRetries + downloadOptions.downloadTimeout;
-    console.log(`handle timeout is: ${handleTimeout}`);
+    const downloadUploadOptions = { downloadOptions, uploadOptions, measureTimes };
 
     console.log('loading state...');
 
@@ -114,6 +119,12 @@ Apify.main(async () => {
     // SAVING STATE
     const stateInterval = setInterval(async () => {
         await Apify.setValue('STATE', images);
+    }, 10 * 1000);
+
+    setInterval(() => {
+        console.log('size of state', sizeofMb(images));
+        console.log('size of stats', sizeofMb(stats));
+        console.log('size of stats return', sizeofMb(stats.return()));
     }, 10 * 1000);
 
     let processedState = await Apify.getValue('processed-state');
@@ -242,9 +253,11 @@ Apify.main(async () => {
                     }
                 }
                 const info = await downloadUpload(url, key, downloadUploadOptions, imageCheck);
-                stats.add(props.timeSpentDownloading, info.time.downloading, true);
-                stats.add(props.timeSpentProcessing, info.time.processing, true);
-                stats.add(props.timeSpentUploading, info.time.uploading, true);
+                if (downloadUploadOptions.measureTimes) {
+                    stats.add(props.timeSpentDownloading, info.time.downloading, true);
+                    stats.add(props.timeSpentProcessing, info.time.processing, true);
+                    stats.add(props.timeSpentUploading, info.time.uploading, true);
+                }
                 images[url] = info;
                 if (info.imageUploaded) {
                     stats.inc(props.imagesUploaded, true);
@@ -253,7 +266,7 @@ Apify.main(async () => {
                     stats.addFailed({ url, errors: info.errors });
                 }
             };
-            const timeoutPromise = new Promise((resolve, reject) => setTimeout(reject, handleTimeout));
+            const timeoutPromise = new Promise((resolve, reject) => setTimeout(reject, handleFunctionTimeout));
 
             try {
                 await Promise.race([
@@ -261,13 +274,13 @@ Apify.main(async () => {
                     timeoutPromise,
                 ]);
             } catch (e) {
-                console.log('Handle function timeouted');
+                console.log('Handle function timeouted or failed:', e);
                 stats.inc(props.imagesFailed, true);
                 stats.addFailed({ url, errors: ['Handle function timeout! Code got stuck somewhere probably'] });
             }
         };
 
-        const crawler = new Apify.BasicCrawler({
+        let crawler = new Apify.BasicCrawler({
             requestList,
             handleRequestFunction,
             autoscaledPoolOptions: {
@@ -283,12 +296,18 @@ Apify.main(async () => {
 
         await crawler.run();
 
+        crawler = null;
+
         console.log(`All images in iteration ${iterationIndex} were processed`);
+
+        heapdump.writeSnapshot(path.join(__dirname, `../snapshots/${Date.now()}-${iterationIndex}.heapsnapshot`), (err, filename) => {
+            console.log('snapshot written:', err, filename);
+        });
 
         // postprocessing function
         if ((outputTo && outputTo !== 'no-output')) {
             console.log('Will save output data to:', outputTo);
-            const processedData = postDownloadFunction
+            let processedData = postDownloadFunction
                 ? await postDownloadFunction(inputData, images, fileNameFunction, md5)
                 : inputData;
             console.log('Post-download processed data length:', processedData.length);
@@ -303,7 +322,7 @@ Apify.main(async () => {
                 const chunkSize = 500;
                 let index = (await Apify.getValue('PUSHING-STATE')) || 0; // eslint-disable-line
                 console.log(`Loaded starting index: ${index}`);
-                const alreadyIterated = iterationIndex * DATASET_BATCH_SIZE;
+                const alreadyIterated = iterationIndex * batchSize;
                 const ceil = processedData.length + alreadyIterated;
                 for (; index < ceil; index += chunkSize) {
                     console.log(`pushing data ${index}:${index + chunkSize}`);
@@ -316,7 +335,9 @@ Apify.main(async () => {
                 // saving PUSHING-STATE for last time
                 await Apify.setValue('PUSHING-STATE', index);
             }
+            processedData = null;
         }
+        inputData = null;
         console.log('END OF ITERATION STATS:');
         stats.display();
     };
@@ -335,10 +356,10 @@ Apify.main(async () => {
             const type = isDataset ? 'dataset' : 'crawler';
             const { itemCount } = await Apify.client.datasets.getDataset({ datasetId: inputId });
             stats.set(props.itemsTotal, itemCount, true);
-            const iterationIndex = Math.floor(initialPushingState / DATASET_BATCH_SIZE);
+            const iterationIndex = Math.floor(initialPushingState / batchSize);
             console.log(`Starting iteration index: ${iterationIndex}`);
-            await loadItems({ id: inputId, type, callback: mainProcess },
-                iterationIndex * DATASET_BATCH_SIZE,
+            await loadItems({ id: inputId, type, callback: mainProcess, batchSize },
+                iterationIndex * batchSize,
                 iterationIndex,
             );
         } else {

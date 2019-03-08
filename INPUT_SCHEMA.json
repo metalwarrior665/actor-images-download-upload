@@ -143,9 +143,15 @@
             "minimum": 100
         },
         "handleFunctionTimeout": {
-            "title": "Download timeout",
+            "title": "Handle function timeout",
             "type": "integer",
             "description": "How long can each image be handled with all retries. This is to prevent hanging.",
+            "minimum": 100
+        },
+        "batchSize": {
+            "title": "Batch Size",
+            "type": "integer",
+            "description": "Number of items loaded from dataset in one batch.",
             "minimum": 100
         }
     }

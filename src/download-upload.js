@@ -1,8 +1,8 @@
 const Apify = require('apify');
 const rp = require('request-fixed-tunnel-agent');
 
-const { PROXY_URL, REQUEST_EXTERNAL_TIMEOUT } = require('./constants');
-const { checkIfImage, convertWebpToPng } = require('./utils');
+const { PROXY_URL } = require('./constants.js');
+const { checkIfImage, convertWebpToPng } = require('./image-check.js');
 
 const deduplicateErrors = (errors) => {
     return errors.reduce((newErrors, error) => {
@@ -43,6 +43,8 @@ const upload = async (key, buffer, uploadOptions) => {
 };
 
 const download = async (url, imageCheck, key, downloadOptions) => {
+    const { downloadTimeout, maxRetries } = downloadOptions;
+
     const normalOptions = {
         url,
         encoding: null,
@@ -64,14 +66,14 @@ const download = async (url, imageCheck, key, downloadOptions) => {
     const sendRequest = async (options) => {
         return Promise.race([
             rp(options),
-            new Promise((resolve, reject) => setTimeout(() => reject(new Error('Timeouted')), downloadOptions.downloadTimeout || REQUEST_EXTERNAL_TIMEOUT)),
+            new Promise((resolve, reject) => setTimeout(() => reject(new Error('Timeouted')), downloadTimeout)),
         ]).catch(handleError);
     };
 
     let timeDownloading = 0;
     let timeProcessing = 0;
 
-    while (!imageDownloaded && errors.length <= downloadOptions.maxRetries) {
+    while (!imageDownloaded && errors.length <= maxRetries) {
         const startDownloading = Date.now();
         if (errors.length > 0) {
             response = await sendRequest(proxyOptions);
@@ -117,7 +119,7 @@ const download = async (url, imageCheck, key, downloadOptions) => {
 };
 
 module.exports.downloadUpload = async (url, key, downloadUploadOptions, imageCheck) => {
-    const { downloadOptions, uploadOptions } = downloadUploadOptions;
+    const { downloadOptions, uploadOptions, measureTimes } = downloadUploadOptions;
     const errors = [];
     const time = {
         downloading: 0,
@@ -158,9 +160,12 @@ module.exports.downloadUpload = async (url, key, downloadUploadOptions, imageChe
     downloadErrors.forEach((error) => {
         errors.push({ when: 'download', message: error });
     });
-    return {
+    const infoObject = {
         imageUploaded,
         errors: deduplicateErrors(errors),
-        time,
     };
+    if (measureTimes) {
+        infoObject.time = time;
+    }
+    return infoObject;
 };
