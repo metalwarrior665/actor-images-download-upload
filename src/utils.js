@@ -19,7 +19,7 @@ module.exports.setS3 = (credentials) => {
     return s3;
 };
 
-const loadItems = async ({ id, type, callback, batchSize }, offset = 0, iterationIndex = 0) => {
+const loadItems = async ({ id, type, callback, batchSize, iterationInput, stats }, offset = 0, iterationIndex = 0) => {
     let newItems;
     const limit = batchSize;
     if (type === 'dataset') {
@@ -42,9 +42,9 @@ const loadItems = async ({ id, type, callback, batchSize }, offset = 0, iteratio
     if (!newItems || newItems.length === 0) {
         return;
     }
-    await callback(newItems, iterationIndex);
+    await callback(newItems, iterationInput, iterationIndex, stats);
     newItems = null;
-    await loadItems({ id, type, callback, batchSize }, offset + limit, iterationIndex + 1);
+    await loadItems({ id, type, callback, batchSize, iterationInput, stats }, offset + limit, iterationIndex + 1);
 };
 
 module.exports.loadItems = loadItems;
