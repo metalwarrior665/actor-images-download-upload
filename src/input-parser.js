@@ -29,6 +29,7 @@ module.exports.constantsFromInput = (input) => {
         handleFunctionTimeout = 60 * 1000,
         batchSize = DATASET_BATCH_SIZE,
         measureTimes = false,
+        measureMemory = false
     } = input;
 
     const imageCheck = {
@@ -70,6 +71,7 @@ module.exports.constantsFromInput = (input) => {
             handleFunctionTimeout,
             batchSize,
             measureTimes,
+            measureMemory,
             imageCheck,
             downloadUploadOptions,
         },

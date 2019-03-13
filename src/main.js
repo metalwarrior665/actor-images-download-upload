@@ -23,12 +23,6 @@ Apify.main(async () => {
     stats.display();
     const props = stats.getProps();
 
-    // periodially displaying stats
-    const statsInterval = setInterval(async () => {
-        stats.display();
-        await Apify.setValue('stats-state', stats.return());
-    }, 10 * 1000);
-
     const initialIterationState = {
         0: {
             index: 0,
@@ -78,11 +72,6 @@ Apify.main(async () => {
         }
     }
 
-    await Apify.setValue('stats-state', stats.return());
-
-    clearInterval(statsInterval);
-    stats.display();
-
     try {
         const runStarted = process.env.APIFY_STARTED_AT;
         const runFinished = new Date().toISOString();
@@ -97,6 +86,7 @@ Apify.main(async () => {
 
         // const dataset = await Apify.openDataset(saveStats);
         // await dataset.pushData(statsObject);
+        await Apify.setValue('stats-state', stats.return());
         await Apify.setValue('stats', statsObject);
     } catch (e) {
         console.log('Saving stats failed with error:', e.message);

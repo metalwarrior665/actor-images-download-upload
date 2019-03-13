@@ -12,6 +12,12 @@ const { downloadUpload } = require('./download-upload');
 module.exports.iterationProcess = async (inputData, inputIteration, iterationIndex, stats) => {
     const props = stats.getProps();
 
+    // periodially displaying stats
+    const statsInterval = setInterval(async () => {
+        stats.display();
+        await Apify.setValue('stats-state', stats.return());
+    }, 10 * 1000);
+
     const {
         uploadTo,
         pathToImageUrls,
@@ -26,6 +32,7 @@ module.exports.iterationProcess = async (inputData, inputIteration, iterationInd
         handleFunctionTimeout,
         imageCheck,
         downloadUploadOptions,
+        measureMemory,
     } = inputIteration;
     console.log('loading state...');
 
@@ -214,15 +221,18 @@ module.exports.iterationProcess = async (inputData, inputIteration, iterationInd
 
     console.log(`All images in iteration ${iterationIndex} were processed`);
 
-    const dumpName = `${Date.now()}-${iterationIndex}.heapsnapshot`;
-    const dumpPath = path.join(__dirname, dumpName);
+    // For debugging memory leak, remove later
+    if (measureMemory) {
+        const dumpName = `${Date.now()}-${iterationIndex}.heapsnapshot`;
+        const dumpPath = path.join(__dirname, dumpName);
 
-    heapdump.writeSnapshot(dumpPath, (err, filename) => {
-        console.log('snapshot written:', err, filename);
-    });
+        heapdump.writeSnapshot(dumpPath, (err, filename) => {
+            console.log('snapshot written:', err, filename);
+        });
 
-    const dumpBuff = fs.readFileSync(dumpPath);
-    await Apify.setValue(dumpName, dumpBuff, { contentType: 'application/octet-stream' });
+        const dumpBuff = fs.readFileSync(dumpPath);
+        await Apify.setValue(dumpName, dumpBuff, { contentType: 'application/octet-stream' });
+    }
 
     // postprocessing function
     if ((outputTo && outputTo !== 'no-output')) {
@@ -253,6 +263,7 @@ module.exports.iterationProcess = async (inputData, inputIteration, iterationInd
         }
         processedData = null;
     }
+    clearInterval(statsInterval);
     // Saving STATE for last time
     clearInterval(stateInterval);
     iterationState[iterationIndex].finished = true;
