@@ -91,6 +91,17 @@ module.exports.checkIfImage = async (response, imageCheck) => {
                     retry: false,
                 };
             }
+            if (imageCheck.propagateSizes) {
+                return {
+                    isImage: true,
+                    error: null,
+                    contentType,
+                    sizes: {
+                        width,
+                        height,
+                    },
+                };
+            }
         }
         return {
             isImage: true,

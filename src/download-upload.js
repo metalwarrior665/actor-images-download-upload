@@ -58,6 +58,7 @@ const download = async (url, imageCheck, key, downloadOptions) => {
     let imageDownloaded = false;
     let response;
     let contentTypeMain;
+    let sizesMain;
 
     const handleError = (e) => {
         errors.push(e.toString());
@@ -84,7 +85,8 @@ const download = async (url, imageCheck, key, downloadOptions) => {
         if (!response) continue; // eslint-disable-line
 
         const startProcessing = Date.now();
-        const { isImage, error, retry, contentType } = await checkIfImage(response, imageCheck);
+        const { isImage, error, retry, contentType, sizes } = await checkIfImage(response, imageCheck);
+        sizesMain = sizes;
         timeProcessing += Date.now() - startProcessing;
 
         if (!isImage) {
@@ -115,6 +117,7 @@ const download = async (url, imageCheck, key, downloadOptions) => {
         imageDownloaded,
         timeDownloading,
         timeProcessing,
+        sizes: sizesMain,
     };
 };
 
@@ -142,6 +145,7 @@ module.exports.downloadUpload = async (url, key, downloadUploadOptions, imageChe
         imageDownloaded,
         timeDownloading,
         timeProcessing,
+        sizes,
     } = await download(url, imageCheck, key, downloadOptions);
 
     time.downloading = timeDownloading;
@@ -166,6 +170,9 @@ module.exports.downloadUpload = async (url, key, downloadUploadOptions, imageChe
     };
     if (measureTimes) {
         infoObject.time = time;
+    }
+    if (imageCheck.propagateSizes) {
+        infoObject.sizes = sizes;
     }
     return infoObject;
 };

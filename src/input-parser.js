@@ -29,7 +29,8 @@ module.exports.constantsFromInput = (input) => {
         handleFunctionTimeout = 60 * 1000,
         batchSize = DATASET_BATCH_SIZE,
         measureTimes = false,
-        measureMemory = false
+        measureMemory = false,
+        propagateSizes = false,
     } = input;
 
     const imageCheck = {
@@ -38,6 +39,7 @@ module.exports.constantsFromInput = (input) => {
         minWidth: imageCheckMinWidth,
         minHeight: imageCheckMinHeight,
         convertWebpToPng,
+        propagateSizes,
     };
     const s3Credentials = { s3Bucket, s3AccessKeyId, s3SecretAccessKey };
     const uploadOptions = {
