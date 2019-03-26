@@ -153,6 +153,11 @@
             "type": "integer",
             "description": "Number of items loaded from dataset in one batch.",
             "minimum": 100
+        },
+        "propagateSizes": {
+            "title": "Propagate Sizes",
+            "type": "boolean",
+            "description": "If you want the state object to hold info about the image size."
         }
     }
 }
