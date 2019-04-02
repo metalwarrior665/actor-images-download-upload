@@ -19,32 +19,23 @@ module.exports.setS3 = (credentials) => {
     return s3;
 };
 
-const loadItems = async ({ id, type, callback, batchSize, iterationInput, stats }, offset = 0, iterationIndex = 0) => {
+const loadItems = async ({ id, callback, batchSize, iterationInput, stats }, offset = 0, iterationIndex = 0) => {
     let newItems;
     const limit = batchSize;
-    if (type === 'dataset') {
-        console.log('loading from dataset');
-        newItems = await Apify.client.datasets.getItems({
-            datasetId: id,
-            offset,
-            limit,
-        }).then((res) => res.items).catch(console.log);
-    } else if (type === 'crawler') {
-        console.log('loading from crawler');
-        newItems = await Apify.client.crawlers.getExecutionResults({
-            executionId: id,
-            simplified: 1,
-            skipFailedPages: 1,
-            offset,
-            limit,
-        }).then((res) => res.items).catch(console.log);
-    }
+
+    console.log('loading from dataset');
+    newItems = await Apify.client.datasets.getItems({
+        datasetId: id,
+        offset,
+        limit,
+    }).then((res) => res.items).catch(console.log);
+
     if (!newItems || newItems.length === 0) {
         return;
     }
     await callback(newItems, iterationInput, iterationIndex, stats);
     newItems = null;
-    await loadItems({ id, type, callback, batchSize, iterationInput, stats }, offset + limit, iterationIndex + 1);
+    await loadItems({ id, callback, batchSize, iterationInput, stats }, offset + limit, iterationIndex + 1);
 };
 
 module.exports.loadItems = loadItems;

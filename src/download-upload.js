@@ -17,10 +17,18 @@ const deduplicateErrors = (errors) => {
 const upload = async (key, buffer, uploadOptions) => {
     const errors = [];
     if (uploadOptions.uploadTo === 'key-value-store') {
-        await Apify.setValue(key, buffer, { contentType: 'image/jpeg' })
-            .catch((e) => {
-                errors.push(e.message);
-            });
+        if (uploadOptions.storeHandle) {
+            await uploadOptions.storeHandle.setValue(key, buffer, { contentType: 'image/jpeg' })
+                .catch((e) => {
+                    errors.push(e.message);
+                });
+        } else {
+            await Apify.setValue(key, buffer, { contentType: 'image/jpeg' })
+                .catch((e) => {
+                    errors.push(e.message);
+                });
+        }
+
     }
     if (uploadOptions.uploadTo === 's3') {
         await uploadOptions.s3Client.putObject({

@@ -1,8 +1,10 @@
+const Apify = require('apify');
+
 const { defaultFileNameFunction, defaultPostDownloadFunction } = require('./default-functions');
 const { DATASET_BATCH_SIZE, REQUEST_EXTERNAL_TIMEOUT } = require('./constants.js');
 const { setS3 } = require('./utils.js');
 
-module.exports.constantsFromInput = (input) => {
+module.exports.constantsFromInput = async (input) => {
     const {
         uploadTo,
         pathToImageUrls = '',
@@ -15,11 +17,12 @@ module.exports.constantsFromInput = (input) => {
         loadState,
         maxItems,
         concurrency,
-        imageCheckType,
+        imageCheckType = 'content-type',
         imageCheckMinSize,
         imageCheckMinWidth,
         imageCheckMinHeight,
         imageCheckMaxRetries = 1,
+        uploadStoreName,
         s3Bucket,
         s3AccessKeyId,
         s3SecretAccessKey,
@@ -29,8 +32,8 @@ module.exports.constantsFromInput = (input) => {
         handleFunctionTimeout = 60 * 1000,
         batchSize = DATASET_BATCH_SIZE,
         measureTimes = false,
-        measureMemory = false,
-        propagateSizes = false,
+        measureMemory = false, // not public
+        propagateSizes = false, // not public - not that useful
     } = input;
 
     const imageCheck = {
@@ -45,6 +48,7 @@ module.exports.constantsFromInput = (input) => {
     const uploadOptions = {
         uploadTo,
         s3Client: uploadTo === 's3' ? setS3(s3Credentials) : null,
+        storeHandle: uploadStoreName ? await Apify.openKeyValueStore(uploadStoreName) : null,
     };
     const downloadOptions = {
         downloadTimeout,
@@ -79,20 +83,6 @@ module.exports.constantsFromInput = (input) => {
         },
     };
     return finalInput;
-};
-
-module.exports.handleCrawlerWebhook = (input) => {
-    if (input.data) {
-        try {
-            console.log('trying to parse crawler webhook data');
-            input = { inputId: input._id, ...JSON.parse(input.data) };
-            console.log('crawler webhook data parsed as');
-            console.dir(input);
-        } catch (e) {
-            throw new Error(`Parsing crawler webhook data failed with error: ${e.message}`);
-        }
-    }
-    return input;
 };
 
 module.exports.checkInput = (input) => {

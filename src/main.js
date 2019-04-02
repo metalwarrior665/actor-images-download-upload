@@ -2,7 +2,7 @@ const Apify = require('apify');
 
 const { Stats } = require('./stats');
 const { loadItems, hideTokenFromInput } = require('./utils');
-const { checkInput, handleCrawlerWebhook, constantsFromInput } = require('./input-parser');
+const { checkInput, constantsFromInput } = require('./input-parser');
 const { iterationProcess } = require('./iteration-process.js');
 
 Apify.main(async () => {
@@ -10,10 +10,9 @@ Apify.main(async () => {
     console.log('INPUT');
     console.dir(hideTokenFromInput(input));
 
-    input = handleCrawlerWebhook(input);
     input = checkInput(input);
 
-    const { mainInput, iterationInput } = constantsFromInput(input);
+    const { mainInput, iterationInput } = await constantsFromInput(input);
 
     const { inputId, batchSize, recordKey } = mainInput;
 
@@ -44,17 +43,13 @@ Apify.main(async () => {
         const isDataset = await Apify.client.datasets.getDataset({
             datasetId: inputId,
         }).catch(() => console.log('Dataset not found we will try crawler.'));
-        const isCrawler = await Apify.client.crawlers.getExecutionDetails({
-            executionId: inputId,
-        }).catch(() => console.log('Crawler not found we will try key vakue store.'));
 
-        if (isDataset || isCrawler) {
-            const type = isDataset ? 'dataset' : 'crawler';
+        if (isDataset) {
             const { itemCount } = await Apify.client.datasets.getDataset({ datasetId: inputId });
             stats.set(props.itemsTotal, itemCount, true);
             console.log(`Starting iteration index: ${iterationIndex}`);
             await loadItems(
-                { id: inputId, type, callback: iterationProcess, batchSize, iterationInput, stats },
+                { id: inputId, type: 'dataset', callback: iterationProcess, batchSize, iterationInput, stats },
                 iterationIndex * batchSize,
                 iterationIndex,
             );

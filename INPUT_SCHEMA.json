@@ -4,12 +4,6 @@
     "schemaVersion": 1,
     "required": [],
     "properties": {
-        "uploadTo": {
-            "title": "Upload to",
-            "type": "string",
-            "description": "Where do you want to upload the image files",
-            "enum": ["key-value-store", "s3", "no-upload"]
-        },
         "inputId": {
             "title": "Input Id",
             "type": "string",
@@ -112,6 +106,18 @@
             "description": "How many times should actor retry if the file it tries to download fails to pass the tests. Setting this too high can lead to unecessary loops.",
             "minimum": 0,
             "default": 1
+        },
+        "uploadTo": {
+            "title": "Upload to",
+            "type": "string",
+            "description": "Where do you want to upload the image files",
+            "enum": ["key-value-store", "s3", "no-upload"]
+        },
+        "uploadStoreName": {
+            "title": "Key-value store name",
+            "type": "string",
+            "description": "Key-value store name where the images will be upload. Empty field means it will be uploaded to the default key-value store",
+            "editor": "textfield"
         },
         "s3Bucket":{
             "title": "S3 Bucket",
