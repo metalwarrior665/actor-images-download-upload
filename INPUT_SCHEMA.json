@@ -32,21 +32,23 @@
         "fileNameFunction": {
             "title": "Filename function",
             "type": "string",
-            "description": "Function that specifies how will be image filename created from its URL. If you keep this epmty, it will be md5 hash of the URL.",
-            "editor": "javascript"
+            "description": "Function that specifies how will be image filename created from its URL. If you keep this empty, it will be md5 hash of the URL.",
+            "editor": "javascript",
+            "prefill": "(url, md5) => md5(url)"
         },
         "preDownloadFunction": {
             "title": "Pre-download function",
             "type": "string",
             "description": "Function that specifies how will be the data transformed before downloading the image. The input and output of the function is the whole data array. You can skip downloading images of any item if you add skipItem: true field to it.",
-            "editor": "javascript"
+            "editor": "javascript",
+            "prefill": "/* Example: We get rid of the items with price 0\n(inputData) => inputData.filter((item) => item.price > 0)*/"
         },
         "postDownloadFunction": {
             "title": "Post-download function",
             "type": "string",
             "description": "Function that specifies how will be the data transformed before downloading the image. The input and output of the function is the whole data array. By default it adds either the file URL or errors array depending if the download was successfull.",
             "editor": "javascript",
-            "prefill": ""
+            "prefill": "/* Example: We remove items without any successfully uploaded images.\n We also remove any image URLs that were not uploaded\n \n (data, imagesObject, fileNameFunction, md5) => {\n    return data.reduce((newData, item) => {\n        const downloadedImages = item.images.filter((imageUrl) => {\n            return imagesObject[imageUrl] && imagesObject[imageUrl].imageUploaded;\n        });\n        \n        if (downloadedImages.length === 0) {\n            return newData;\n        }\n        \n        return newData.concat({ ...item, images: downloadedImages });\n    }, []);\n}\n*/"
         },
         "maxItems":{
             "title": "Max items",
