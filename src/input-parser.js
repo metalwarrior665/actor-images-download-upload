@@ -14,7 +14,6 @@ module.exports.constantsFromInput = async (input) => {
         fileNameFunction = defaultFileNameFunction,
         preDownloadFunction,
         postDownloadFunction = defaultPostDownloadFunction,
-        loadState,
         maxItems,
         concurrency,
         imageCheckType = 'content-type',
@@ -29,10 +28,8 @@ module.exports.constantsFromInput = async (input) => {
         s3CheckIfAlreadyThere,
         convertWebpToPng,
         downloadTimeout = REQUEST_EXTERNAL_TIMEOUT,
-        handleFunctionTimeout = 60 * 1000,
         batchSize = DATASET_BATCH_SIZE,
-        measureTimes = false,
-        measureMemory = false, // not public
+        isDebug = false,
         propagateSizes = false, // not public - not that useful
     } = input;
 
@@ -54,7 +51,7 @@ module.exports.constantsFromInput = async (input) => {
         downloadTimeout,
         maxRetries: imageCheckMaxRetries,
     };
-    const downloadUploadOptions = { downloadOptions, uploadOptions, measureTimes };
+    const downloadUploadOptions = { downloadOptions, uploadOptions, isDebug };
 
     const finalInput = {
         mainInput: {
@@ -69,15 +66,12 @@ module.exports.constantsFromInput = async (input) => {
             fileNameFunction,
             preDownloadFunction,
             postDownloadFunction,
-            loadState,
             maxItems,
             concurrency,
             s3CheckIfAlreadyThere,
             convertWebpToPng,
-            handleFunctionTimeout,
             batchSize,
-            measureTimes,
-            measureMemory,
+            isDebug,
             imageCheck,
             downloadUploadOptions,
         },

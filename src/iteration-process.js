@@ -25,26 +25,15 @@ module.exports.iterationProcess = async (inputData, inputIteration, iterationInd
         fileNameFunction,
         preDownloadFunction,
         postDownloadFunction,
-        loadState,
         maxItems,
         concurrency,
         s3CheckIfAlreadyThere,
-        handleFunctionTimeout,
         imageCheck,
         downloadUploadOptions,
-        measureMemory,
     } = inputIteration;
     console.log('loading state...');
 
-    let images = (await Apify.getValue(`STATE-IMAGES-${iterationIndex}`)) || {};
-    if (loadState && Object.keys(images).length === 0) {
-        try {
-            images = await Apify.client.keyValueStores.getRecord({ storeId: loadState, key: 'STATE' }).then((res) => res.body);
-        } catch (e) {
-            console.dir(e);
-            throw new Error('State could not be loaded because of error', e);
-        }
-    }
+    const images = (await Apify.getValue(`STATE-IMAGES-${iterationIndex}`)) || {};
 
     const iterationState = await Apify.getValue('STATE-ITERATION');
     if (!iterationState[iterationIndex]) {
@@ -160,46 +149,32 @@ module.exports.iterationProcess = async (inputData, inputIteration, iterationInd
         const { url } = request;
         const { index } = request.userData;
 
-        const mainPromise = async () => {
-            if (typeof images[url].imageUploaded === 'boolean') return; // means it was already download before
-            const itemOfImage = inputData[images[url].itemIndex];
-            const key = fileNameFunction(url, md5, index, itemOfImage);
-            if (s3CheckIfAlreadyThere && uploadTo === 's3') {
-                const { isThere, errors } = await checkIfAlreadyOnS3(key, downloadUploadOptions.uploadOptions);
-                if (isThere) {
-                    images[url] = {
-                        imageUploaded: true, // not really uploaded but we need to add this status
-                        errors,
-                    };
-                    stats.inc(props.imagesAlreadyOnS3, true);
-                    return;
-                }
+        if (typeof images[url].imageUploaded === 'boolean') return; // means it was already download before
+        const itemOfImage = inputData[images[url].itemIndex];
+        const key = fileNameFunction(url, md5, index, itemOfImage);
+        if (s3CheckIfAlreadyThere && uploadTo === 's3') {
+            const { isThere, errors } = await checkIfAlreadyOnS3(key, downloadUploadOptions.uploadOptions);
+            if (isThere) {
+                images[url] = {
+                    imageUploaded: true, // not really uploaded but we need to add this status
+                    errors,
+                };
+                stats.inc(props.imagesAlreadyOnS3, true);
+                return;
             }
-            const info = await downloadUpload(url, key, downloadUploadOptions, imageCheck);
-            if (downloadUploadOptions.measureTimes) {
-                stats.add(props.timeSpentDownloading, info.time.downloading, true);
-                stats.add(props.timeSpentProcessing, info.time.processing, true);
-                stats.add(props.timeSpentUploading, info.time.uploading, true);
-            }
-            images[url] = info;
-            if (info.imageUploaded) {
-                stats.inc(props.imagesUploaded, true);
-            } else {
-                stats.inc(props.imagesFailed, true);
-                stats.addFailed({ url, errors: info.errors });
-            }
-        };
-        const timeoutPromise = new Promise((resolve, reject) => setTimeout(reject, handleFunctionTimeout));
-
-        try {
-            await Promise.race([
-                mainPromise(),
-                timeoutPromise,
-            ]);
-        } catch (e) {
-            console.log('Handle function timeouted or failed:', e);
+        }
+        const info = await downloadUpload(url, key, downloadUploadOptions, imageCheck);
+        if (downloadUploadOptions.isDebug) {
+            stats.add(props.timeSpentDownloading, info.time.downloading, true);
+            stats.add(props.timeSpentProcessing, info.time.processing, true);
+            stats.add(props.timeSpentUploading, info.time.uploading, true);
+        }
+        images[url] = info;
+        if (info.imageUploaded) {
+            stats.inc(props.imagesUploaded, true);
+        } else {
             stats.inc(props.imagesFailed, true);
-            stats.addFailed({ url, errors: ['Handle function timeout! Code got stuck somewhere probably'] });
+            stats.addFailed({ url, errors: info.errors });
         }
     };
 
@@ -215,6 +190,12 @@ module.exports.iterationProcess = async (inputData, inputIteration, iterationInd
             },
         },
         maxConcurrency: concurrency,
+        handleFailedRequestFunction: async ({ request, error }) => {
+            const { url } = request;
+            stats.inc(props.imagesFailed, true);
+            stats.addFailed({ url, errors: [`Handle function failed! ${error.toString()}`] });
+        },
+        handleRequestTimeoutSecs: 180,
     });
 
     await crawler.run();
@@ -222,7 +203,7 @@ module.exports.iterationProcess = async (inputData, inputIteration, iterationInd
     console.log(`All images in iteration ${iterationIndex} were processed`);
 
     // For debugging memory leak, remove later
-    if (measureMemory) {
+    if (downloadUploadOptions.isDebug) {
         const dumpName = `${Date.now()}-${iterationIndex}.heapsnapshot`;
         const dumpPath = path.join(__dirname, dumpName);
 

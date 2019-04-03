@@ -28,7 +28,6 @@ const upload = async (key, buffer, uploadOptions) => {
                     errors.push(e.message);
                 });
         }
-
     }
     if (uploadOptions.uploadTo === 's3') {
         await uploadOptions.s3Client.putObject({
@@ -130,7 +129,7 @@ const download = async (url, imageCheck, key, downloadOptions) => {
 };
 
 module.exports.downloadUpload = async (url, key, downloadUploadOptions, imageCheck) => {
-    const { downloadOptions, uploadOptions, measureTimes } = downloadUploadOptions;
+    const { downloadOptions, uploadOptions, isDebug } = downloadUploadOptions;
     const errors = [];
     const time = {
         downloading: 0,
@@ -176,7 +175,7 @@ module.exports.downloadUpload = async (url, key, downloadUploadOptions, imageChe
         imageUploaded,
         errors: deduplicateErrors(errors),
     };
-    if (measureTimes) {
+    if (isDebug) {
         infoObject.time = time;
     }
     if (imageCheck.propagateSizes) {

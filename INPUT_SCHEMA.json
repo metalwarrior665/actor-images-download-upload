@@ -48,12 +48,6 @@
             "editor": "javascript",
             "prefill": ""
         },
-        "loadState":{
-            "title": "Load state from store",
-            "type": "string",
-            "description": "If you previous run crashed, you can load state and continue from here. Just provide the previous store id",
-            "editor": "textfield"
-        },
         "maxItems":{
             "title": "Max items",
             "type": "integer",
@@ -66,11 +60,6 @@
             "description": "You can specify how many maximum parallel downloading/uploading requests will be running. Keep in mind that the limit is here to not overload the host server.",
             "default": 40
         },
-        "flatten":{
-            "title": "Flatten",
-            "type": "boolean",
-            "description": "Useful if the data in input are nested in more arrays. If this is checked, arrays will be flattened."
-        },
         "convertWebpToPng": {
             "title": "Convert webp to png",
             "type": "boolean",
@@ -80,7 +69,8 @@
             "title": "Image check type",
             "type": "string",
             "description": "Type of the image check. If the image will not pass, the download will be retied with proxy and if that doesn't pass, the image is not uploaded.",
-            "enum": ["none", "content-type", "image-size"]
+            "enum": ["none", "content-type", "image-size"],
+            "default": "content-type"
         },
         "imageCheckMinSize":{
             "title": "Min size in KB",
@@ -148,22 +138,22 @@
             "description": "How long we will wait to download each image",
             "minimum": 100
         },
-        "handleFunctionTimeout": {
-            "title": "Handle function timeout",
-            "type": "integer",
-            "description": "How long can each image be handled with all retries. This is to prevent hanging.",
-            "minimum": 100
-        },
         "batchSize": {
             "title": "Batch Size",
             "type": "integer",
             "description": "Number of items loaded from dataset in one batch.",
-            "minimum": 100
+            "minimum": 100,
+            "default": 10000
         },
         "propagateSizes": {
             "title": "Propagate Sizes",
             "type": "boolean",
             "description": "If you want the state object to hold info about the image size."
+        },
+        "isDebug": {
+            "title": "Debug",
+            "type": "boolean",
+            "description": "Measures memory and times."
         }
     }
 }

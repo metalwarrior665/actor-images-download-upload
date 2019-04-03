@@ -21,7 +21,7 @@
     "@types/image-size": "0.0.29",
     "@types/jimp": "^0.2.28",
     "@types/ramda": "^0.25.42",
-    "apify": "^0.9.13",
+    "apify": "^0.13.4",
     "aws-sdk": "^2.363.0",
     "file-type": "^10.6.0",
     "heapdump": "^0.3.12",

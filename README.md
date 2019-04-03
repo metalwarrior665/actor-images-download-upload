@@ -55,6 +55,62 @@ Most of Apify actors require a JSON input and this one is no exception. The inpu
 ## Data and image paths
 The data where the image URLs are located needs to be saved on [Apify storage](https://apify.com/docs/storage) either in [key-value store](https://apify.com/docs/storage#key-value-store) or [dataset](https://apify.com/docs/storage#dataset). If you don't have the data already there, you can simply upload them with a single API call for key-value store or dataset.
 
+Data provided should be an array (which is always the case for datasets) and the images can be located anywhere in the nested objects, it should just be consistent over all items. The `pathToImageUrls` uses [object-path](https://www.npmjs.com/package/object-path) library to locate the images, it can point either to a single image URL or an array of image URLs.
+
+**Few examples**:
+
+Data can be just a plain array of image URLs. In this case you don't need to fill `pathToImageUrls` at all.
+
+```
+[
+    "https://n.nordstrommedia.com/id/cf6c6151-4380-44aa-ad73-85e4b2140383.jpeg",
+    "https://n.nordstrommedia.com/id/6c03833f-c5f1-43d8-9d20-fb29834c7798.jpeg"
+]
+```
+
+If you scrape some e-commerce website, you will usually have items that have the images inside. In this example `pathToImageUrls` would be `images`.
+
+```
+[{
+
+  "title": "wide sleeved blouse",
+  "price": 790,
+  "url": "https://www.farfetch.com/shopping/women/rosetta-getty-wide-sleeved-blouse-item-12997948.aspx",
+  "images": [
+    "https://cdn-images.farfetch-contents.com/12/99/79/48/12997948_13710943_1000.jpg",
+    "https://cdn-images.farfetch-contents.com/12/99/79/48/12997948_13710944_1000.jpg",
+    "https://cdn-images.farfetch-contents.com/12/99/79/48/12997948_13710945_1000.jpg",
+  ]
+},
+{
+  "title": "Nagoya jumpsuit",
+  "price": 996,
+  "url": "https://www.farfetch.com/shopping/women/le-kasha-nagoya-jumpsuit-item-12534697.aspx",
+  "images": [
+    "https://cdn-images.farfetch-contents.com/12/53/46/97/12534697_11885527_1000.jpg",
+    "https://cdn-images.farfetch-contents.com/12/53/46/97/12534697_11885539_1000.jpg",
+    "https://cdn-images.farfetch-contents.com/12/53/46/97/12534697_11885553_1000.jpg",
+  ]
+}
+]
+```
+
+Image URLs can be also deeply nested. In this case it is also just single URL instead of an array. `pathToImageUrls` will be `images.0.src`
+
+```
+[{
+  "retailer": "walmart",
+  "url": "https://www.walmart.com/ip/Pull-On-Treggings/462482210",
+  "title": "Pull-On Treggings",
+  "retailPrice": 40,
+  "images": [
+    {
+      "src": "https://i5.walmartimages.com/asr/88dcf47d-052b-4a06-815f-82c071ca2e50_1.ea5c31e512197ac22b3c7e7c1959aa84.jpeg?odnHeight=450&odnWidth=450&odnBg=FFFFFF"
+    }
+  ]
+}]
+```
+
 ## Input functions
 
 ## Webhooks
