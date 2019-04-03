@@ -2,7 +2,7 @@
     "title": "Spreadsheet import input",
     "type": "object",
     "schemaVersion": 1,
-    "required": [],
+    "required": ["inputId"],
     "properties": {
         "inputId": {
             "title": "Input Id",
@@ -20,7 +20,8 @@
             "title": "Output to",
             "type": "string",
             "description": "Where to save the output with enhanced data.",
-            "enum": ["no-output", "key-value-store", "dataset"]
+            "enum": ["no-output", "key-value-store", "dataset"],
+            "prefill": "no-output"
         },
         "pathToImageUrls": {
             "title": "Path to image URLs",
