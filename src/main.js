@@ -54,6 +54,8 @@ Apify.main(async () => {
                 iterationIndex,
             );
         } else {
+            console.log('loading from kvStore');
+            console.log('record key: ', recordKey, 'inputId:', inputId);
             const keyValueStore = await Apify.client.keyValueStores.getRecord({
                 key: recordKey, storeId: inputId,
             }).catch(() => console.log('Key value store or record inside him not found, we cannot continue'));

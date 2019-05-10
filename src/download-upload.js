@@ -125,6 +125,7 @@ const download = async (url, imageCheck, key, downloadOptions) => {
         timeDownloading,
         timeProcessing,
         sizes: sizesMain,
+        contentType: contentTypeMain,
     };
 };
 
@@ -175,11 +176,9 @@ module.exports.downloadUpload = async (url, key, downloadUploadOptions, imageChe
         imageUploaded,
         errors: deduplicateErrors(errors),
     };
-    if (isDebug) {
-        infoObject.time = time;
-    }
-    if (imageCheck.propagateSizes) {
+    if (!imageCheck.noInfo) {
         infoObject.sizes = sizes;
+        infoObject.time = time;
     }
     return infoObject;
 };

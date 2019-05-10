@@ -1,6 +1,6 @@
 ## images-download-upload
 
-Documentation will be available very soon. This actor is still rapidly improving but functional.
+This is detailed documentation of the actor. If you rather want a quick-start with a real example, read this blog post tutorial(article coming very soon!).
 
 - [Overview](#overview)
 - [Changelog](#Changelog)
@@ -8,6 +8,7 @@ Documentation will be available very soon. This actor is still rapidly improving
 - [Input](#input)
 - [Data and image paths](#data-and-image-paths)
 - [Input functions](#input-functions)
+- [Internals](#internals)
 - [Webhooks](#webhooks)
 
 ## Overview
@@ -113,8 +114,106 @@ Image URLs can be also deeply nested. In this case it is also just single URL in
 
 ## Input functions
 
-## Webhooks
+For more advanced data preparation and post-processing, you can use any of the 3 input functions. Let's look at each of them and their use-cases.
 
+### fileNameFunction
+`fileNameFunction` is the only one of the three that is always executed and has it's default form. It basically names each image file no matter where it is stored.
+
+It receives these arguments which you can (but not need to) use:
+, md5, index, itemOfImage
+- `url`<[string](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#String_type)> URL of the image.
+- `md5` <[function](https://www.npmjs.com/package/md5)> Simple function that takes a string and produces a hash.
+- `index` <[number](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#Number_type)> Index of the image in the download process. Each image has unique index.
+- `itemOfImage` <[object](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object)> The item object where the image URL is located.
+
+By default `fileNameFunction` simply produces a hash of the image URL:
+```(url, md5, index, itemOfImage) => md5(url)```
+So your image file would be named something like `78e731027d8fd50ed642340b7c9a63b3`.
+
+**Example use-cases**:
+*Create folder on S3 and simply add index numbers as filenames*
+```(url, md5, index, itemOfImage) => `images/${index}` ```
+
+*More complicated filename that depends on other atributes of the item*
+```(url, md5, index, itemOfImage) => `${item.retailer}_${item.retailerProductId}_${item.color}.jpg` ```
+
+### preDownloadFunction
+`preDownloadFunction` is useful when you need to process the data before downloading them. You can get rid of items that are corrupted or not interesting.
+
+It receives only the `inputData` argument which is the data as loaded from the `inputId`.
+
+**skipDownload**
+If you add `skipDownload: true` property to any item, its images won't be downloaded. The data will stay as they are.
+
+**Example use-cases**:
+*Do not download images of items that are not new*
+```
+(inputData) => inputData.map((item) => {
+    if (item.status !== 'NEW) {
+        item.skipDownload = true;
+    }
+    return item;
+})
+```
+
+### postDownloadFunction
+`postDownloadFunction` allows you to change the data after the downloading process finished. Its main advantage is that you know if the images were properly downloaded.
+
+It receives these arguments which you can (but not need to) use:
+- `data` <[array](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array)> The data that you get from `inputId` or pass in `preDownloadFunction` if you specified it.
+- `imagesObject` <[object](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object)> State object that has image URLs of the current batch as keys and their info as values. Look [below](#internals) for more details about state object.
+- `fileNameFunction` <[function](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions)> Filename function that you specified or its default implementation.
+- `md5` <[function](https://www.npmjs.com/package/md5)> Simple function that takes a string and produces a hash.
+
+**Example use-cases**:
+*Remove all image URLs that were not properly downloaded/uploaded. If the item has no downloaded/uploaded image, remove it completely. The download can be hard blocked by the website (even after multiple retries) but it can also fail the test you can configure, e.g. the image is too small*
+```
+ (data, imagesObject, fileNameFunction, md5) => {
+    // we map over all the items
+    return data.reduce((newData, item) => {
+        // We filter only the downloaded/uploaded
+        const downloadedImages = item.images.filter((imageUrl) => {
+                return imagesObject[imageUrl] && imagesObject[imageUrl].imageUploaded;
+            });
+
+        // If there are no downloaded image, we remove the item from the data
+        if (downloadedImages.length === 0) {
+            return newData;
+        }
+
+        // At the end we will assign only properly downloaded/uploaded images and pass the item to our processed data.
+        return newData.concat({ ...item, images: downloadedImages });
+    }, []);
+}
+```
+
+## Internals
+The actor processes the `inputData` in batches to lower memory needs. The default batch size is 10000 items. Each batch has its own data and state and the data are fully processed before the next batch starts to get processed.
+
+The state is an object which keys are image URLs. It's values depend on if the image URLs was processed or not. Initially the images are loaded just with indexes like this:
+```
+{
+  "https://images-na.ssl-images-amazon.com/images/I/716chGzGflL._UL1500_.jpg": {
+    "itemIndex": 328,
+    "imageIndex": 1982
+  },
+  "https://images-na.ssl-images-amazon.com/images/I/81ySn0IS0zL._UL1500_.jpg": {
+    "itemIndex": 328,
+    "imageIndex": 1983
+  },
+  "https://images-na.ssl-images-amazon.com/images/I/71plznRyJ9L._UL1500_.jpg": {
+    "itemIndex": 328,
+    "imageIndex": 1984
+  }
+}
+```
+
+## Webhooks
+Currently Actor webhooks don't allow to pass custom input so this actor cannot be called by a webhook (This feature should be available very soon).
+
+For now you should call this actor using [Apify.call()](https://sdk.apify.com/docs/api/apify#module_Apify.call) or create a task and then call the task with [Apify.callTask()](https://sdk.apify.com/docs/api/apify#module_Apify.callTask)(This is prefered option). If you want to call this from a Web Scraper or other public actor that doesn't allow you to modify its source code, you have to create an intermediate actor that will serve the correct input.
+
+You can read about the whole workflow and integration in my blog post. (Add link)
 
 
 

@@ -88,6 +88,7 @@ module.exports.iterationProcess = async (inputData, inputIteration, iterationInd
     stats.add(props.itemsSkipped, itemsSkippedCount, updateStats);
 
     // add images to state
+    let imageIndex = 0;
     try {
         inputData.forEach((item, itemIndex) => {
             if (item.skipDownload) return; // we skip item with this field
@@ -112,7 +113,9 @@ module.exports.iterationProcess = async (inputData, inputIteration, iterationInd
                 if (images[image] === undefined) { // undefined means they were not yet added
                     images[image] = {
                         itemIndex,
+                        imageIndex,
                     }; // false means they were not yet downloaded / uploaded or the process failed
+                    imageIndex++;
                 } else if (typeof images[image] === 'object' && images[image].fromState) {
                     // stats.inc(props.imagesDownloadedPreviously, updateStats);
                 } else {

@@ -31,88 +31,66 @@ module.exports.convertWebpToPng = async (origBuffer, key) => {
 };
 
 module.exports.checkIfImage = async (response, imageCheck) => {
+    const result = {
+        isImage: false,
+        error: undefined,
+        contentType: undefined,
+        sizes: {},
+        retry: false,
+    };
     try {
         if (!response) {
-            return {
-                isImage: false,
-                error: 'No response object, probably crashed',
-                retry: false,
-            };
+            result.error = 'No response object, probably crashed';
+            return result;
         }
 
         const { statusCode } = response;
 
-        if (statusCode === 404) {
-            return {
-                isImage: false,
-                error: statusCode,
-                retry: false,
-            };
-        }
         if (statusCode >= 400) {
-            return {
-                isImage: false,
-                error: statusCode,
-                retry: true,
-            };
+            result.error = statusCode;
+            // On non-404 we retry
+            if (statusCode !== 404) {
+                result.retry = true;
+            }
+            return result;
         }
 
         const buffer = response.body;
-        let contentType;
 
         if (imageCheck.type === 'content-type' || imageCheck.type === 'image-size') {
             const { mime } = fileType(buffer);
-            contentType = mime;
+            result.contentType = mime;
             if (!mime.includes('image/')) {
-                return {
-                    isImage: false,
-                    error: `Content type is not an image. Instead: ${mime}`,
-                    retry: true,
-                };
+                result.error = `Content type is not an image. Instead: ${mime}`;
+                // We also retry on bad content-type, this can mean captcha
+                result.retry = true;
+                return result;
             }
         }
 
         // first we check buffer size
         const imageSizeInKB = Math.floor(buffer.length / 1024);
+        result.sizes.sizeInKB = imageSizeInKB;
         if (imageSizeInKB < imageCheck.minSize) {
-            return {
-                isImage: false,
-                error: `Image is too small. Actual size: ${imageSizeInKB}, min size: ${imageCheck.minSize}`,
-                retry: false,
-            };
+            result.error = `Image is too small. Actual size: ${imageSizeInKB}, min size: ${imageCheck.minSize}`;
+            return result;
         }
 
         if (imageCheck.type === 'image-size') {
             const { width, height } = imageSize(buffer);
+            result.sizes.width = width;
+            result.sizes.height = height;
             if (width < imageCheck.minWidth || height < imageCheck.minHeight) {
-                return {
-                    isImage: false,
-                    error: `Image width or height is too small. Actual: width: ${width}, height: ${height}. Minimum: width: ${imageCheck.minWidth}, height: ${imageCheck.minHeight} `,  // eslint-disable-line
-                    retry: false,
-                };
-            }
-            if (imageCheck.propagateSizes) {
-                return {
-                    isImage: true,
-                    error: null,
-                    contentType,
-                    sizes: {
-                        width,
-                        height,
-                    },
-                };
+                result.error = `Image width or height is too small. Actual: width: ${width}, height: ${height}. Minimum: width: ${imageCheck.minWidth}, height: ${imageCheck.minHeight} `;  // eslint-disable-line
+                return result;
             }
         }
-        return {
-            isImage: true,
-            error: null,
-            contentType,
-        };
+
+        // If we got here, the image is good
+        result.isImage = true;
+        return result;
     } catch (e) {
-        return {
-            isImage: false,
-            error: `Image check crashed. Error: ${e}`,
-            retry: false,
-        };
+        result.error = `Image check crashed. Error: ${e}`;
+        return result;
     }
 };

@@ -42,7 +42,7 @@
             "type": "string",
             "description": "Function that specifies how will be the data transformed before downloading the image. The input and output of the function is the whole data array. You can skip downloading images of any item if you add skipItem: true field to it.",
             "editor": "javascript",
-            "prefill": "/* Example: We get rid of the items with price 0\n(inputData) => inputData.filter((item) => item.price > 0)*/"
+            "prefill": "/* Example: We get rid of the items with price 0\n(inputData) => inputData.filter((item) => item.price > 0)\n*/"
         },
         "postDownloadFunction": {
             "title": "Post-download function",
@@ -131,10 +131,11 @@
             "description": "This option is useful if you don't want to rewrite the same image. GET requests are also cheaper than PUT requests"
         },
         "downloadTimeout": {
-            "title": "Download timeout",
+            "title": "Download timeout in ms",
             "type": "integer",
             "description": "How long we will wait to download each image",
-            "minimum": 100
+            "minimum": 100,
+            "default": 7000
         },
         "batchSize": {
             "title": "Batch Size",
@@ -148,7 +149,7 @@
             "type": "boolean",
             "description": "If checked, the actor will automatically convert all webp type images to standard png. This increases the size of the image."
         },
-        "propagateSizes": {
+        "noInfo": {
             "title": "Propagate Sizes",
             "type": "boolean",
             "description": "If you want the state object to hold info about the image size."

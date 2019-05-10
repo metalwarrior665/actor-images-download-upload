@@ -30,7 +30,7 @@ module.exports.constantsFromInput = async (input) => {
         downloadTimeout = REQUEST_EXTERNAL_TIMEOUT,
         batchSize = DATASET_BATCH_SIZE,
         isDebug = false,
-        propagateSizes = false, // not public - not that useful
+        noInfo = false,
     } = input;
 
     const imageCheck = {
@@ -39,7 +39,6 @@ module.exports.constantsFromInput = async (input) => {
         minWidth: imageCheckMinWidth,
         minHeight: imageCheckMinHeight,
         convertWebpToPng,
-        propagateSizes,
     };
     const s3Credentials = { s3Bucket, s3AccessKeyId, s3SecretAccessKey };
     const uploadOptions = {
@@ -57,12 +56,12 @@ module.exports.constantsFromInput = async (input) => {
         mainInput: {
             inputId,
             batchSize,
+            recordKey,
         },
         iterationInput: {
             uploadTo,
             pathToImageUrls,
             outputTo,
-            recordKey,
             fileNameFunction,
             preDownloadFunction,
             postDownloadFunction,
@@ -72,6 +71,7 @@ module.exports.constantsFromInput = async (input) => {
             convertWebpToPng,
             batchSize,
             isDebug,
+            noInfo,
             imageCheck,
             downloadUploadOptions,
         },
