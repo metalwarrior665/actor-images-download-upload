@@ -159,7 +159,7 @@
             "type": "boolean",
             "description": "Measures memory and times."
         },
-        "continueRun": {
+        "continueRunId": {
             "title": "Continue Run ID",
             "type": "string",
             "description": "Id of the run you want to continue (load its state of start)",
