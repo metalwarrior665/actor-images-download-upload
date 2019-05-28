@@ -31,6 +31,7 @@ module.exports.constantsFromInput = async (input) => {
         batchSize = DATASET_BATCH_SIZE,
         isDebug = false,
         noInfo = false,
+        continueRunId = null,
     } = input;
 
     const imageCheck = {
@@ -57,6 +58,7 @@ module.exports.constantsFromInput = async (input) => {
             inputId,
             batchSize,
             recordKey,
+            continueRunId,
         },
         iterationInput: {
             uploadTo,

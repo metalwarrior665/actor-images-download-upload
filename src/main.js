@@ -1,7 +1,7 @@
 const Apify = require('apify');
 
 const { Stats } = require('./stats');
-const { loadItems, hideTokenFromInput } = require('./utils');
+const { loadItems, hideTokenFromInput, copyStoreFromRun } = require('./utils');
 const { checkInput, constantsFromInput } = require('./input-parser');
 const { iterationProcess } = require('./iteration-process.js');
 
@@ -14,7 +14,11 @@ Apify.main(async () => {
 
     const { mainInput, iterationInput } = await constantsFromInput(input);
 
-    const { inputId, batchSize, recordKey } = mainInput;
+    const { inputId, batchSize, recordKey, continueRunId } = mainInput;
+
+    if (continueRunId) {
+        await copyStoreFromRun(continueRunId, process.env.APIFY_DEFAULT_KEY_VALUE_STORE_ID);
+    }
 
     // Stats init
     const statsState = await Apify.getValue('stats-state');

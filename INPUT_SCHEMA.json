@@ -158,6 +158,12 @@
             "title": "Debug",
             "type": "boolean",
             "description": "Measures memory and times."
+        },
+        "continueRun": {
+            "title": "Continue Run ID",
+            "type": "string",
+            "description": "Id of the run you want to continue (load its state of start)",
+            "editor": "textfield"
         }
     }
 }

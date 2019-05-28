@@ -40,6 +40,19 @@ const loadItems = async ({ id, callback, batchSize, iterationInput, stats }, off
 
 module.exports.loadItems = loadItems;
 
+const copyStoreFromRun = async (oldRunId, currentStore) => {
+    const { defaultKeyValueStoreId } = await Apify.client.acts.getRun({ runId: oldRunId, actId: process.env.APIFY_ACTOR_ID || 'SEQBnEA5oe2R9Hgdj' });
+    const keys = await Apify.client.keyValueStores.listKeys({ storeId: defaultKeyValueStoreId })
+        .then((res) => res.items.map((keyObj) => keyObj.key));
+    for (const key of keys) {
+        console.log('Copying key to the current store:', key);
+        const data = await Apify.client.keyValueStores.getRecord({ storeId: defaultKeyValueStoreId, key }).then((res) => res.body);
+        await Apify.client.keyValueStores.putRecord({ storeId: currentStore, key, body: JSON.stringify(data) });
+    }
+};
+
+module.exports.copyStoreFromRun = copyStoreFromRun;
+
 /*
 module.exports.getObjectWithAllKeysFromS3 = async (s3, domain) => {
     const objectWithAllKeys = {};
