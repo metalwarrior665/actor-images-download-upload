@@ -17,7 +17,7 @@ Apify.main(async () => {
     const { inputId, batchSize, recordKey, continueRunId } = mainInput;
 
     if (continueRunId) {
-        await copyStoreFromRun(continueRunId, process.env.APIFY_DEFAULT_KEY_VALUE_STORE_ID);
+        await copyStoreFromRun(continueRunId);
     }
 
     // Stats init
