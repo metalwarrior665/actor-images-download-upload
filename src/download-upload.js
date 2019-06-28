@@ -53,6 +53,7 @@ const download = async (url, imageCheck, key, downloadOptions) => {
     const { downloadTimeout, maxRetries } = downloadOptions;
 
     const normalOptions = {
+        strictSSL: false,
         url,
         encoding: null,
         resolveWithFullResponse: true,
