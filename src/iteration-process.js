@@ -154,7 +154,7 @@ module.exports.iterationProcess = async (inputData, inputIteration, iterationInd
 
         if (typeof images[url].imageUploaded === 'boolean') return; // means it was already download before
         const itemOfImage = inputData[images[url].itemIndex];
-        const key = fileNameFunction(url, md5, index, itemOfImage);
+        const key = fileNameFunction(url, md5, index, itemOfImage, iterationIndex);
         if (s3CheckIfAlreadyThere && uploadTo === 's3') {
             const { isThere, errors } = await checkIfAlreadyOnS3(key, downloadUploadOptions.uploadOptions);
             if (isThere) {
@@ -222,7 +222,7 @@ module.exports.iterationProcess = async (inputData, inputIteration, iterationInd
     if ((outputTo && outputTo !== 'no-output')) {
         console.log('Will save output data to:', outputTo);
         let processedData = postDownloadFunction
-            ? await postDownloadFunction(inputData, images, fileNameFunction, md5)
+            ? await postDownloadFunction(inputData, images, fileNameFunction, md5, iterationIndex)
             : inputData;
         console.log('Post-download processed data length:', processedData.length);
 

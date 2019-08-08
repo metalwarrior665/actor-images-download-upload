@@ -125,6 +125,7 @@ It receives these arguments which you can (but not need to) use:
 - `md5` <[function](https://www.npmjs.com/package/md5)> Simple function that takes a string and produces a hash.
 - `index` <[number](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#Number_type)> Index of the image in the download process. Each image has unique index.
 - `itemOfImage` <[object](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object)> The item object where the image URL is located.
+- `iterationIndex` <[number](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#Number_type)> Index of the current iteration(batch). Look at [internals](#internals) for more info. Starts at 0.
 
 By default `fileNameFunction` simply produces a hash of the image URL:
 ```(url, md5, index, itemOfImage) => md5(url)```
@@ -164,6 +165,7 @@ It receives these arguments which you can (but not need to) use:
 - `imagesObject` <[object](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object)> State object that has image URLs of the current batch as keys and their info as values. Look [below](#internals) for more details about state object.
 - `fileNameFunction` <[function](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions)> Filename function that you specified or its default implementation.
 - `md5` <[function](https://www.npmjs.com/package/md5)> Simple function that takes a string and produces a hash.
+- `iterationIndex` <[number](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#Number_type)> Index of the current iteration(batch). Look at [internals](#internals) for more info. Starts at 0.
 
 **Example use-cases**:
 *Remove all image URLs that were not properly downloaded/uploaded. If the item has no downloaded/uploaded image, remove it completely. The download can be hard blocked by the website (even after multiple retries) but it can also fail the test you can configure, e.g. the image is too small*
