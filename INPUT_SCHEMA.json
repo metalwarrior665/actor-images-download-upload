@@ -51,12 +51,6 @@
             "editor": "javascript",
             "prefill": "/* Example: We remove items without any successfully uploaded images.\n We also remove any image URLs that were not uploaded\n \n (data, imagesObject, fileNameFunction, md5) => {\n    return data.reduce((newData, item) => {\n        const downloadedImages = item.images.filter((imageUrl) => {\n            return imagesObject[imageUrl] && imagesObject[imageUrl].imageUploaded;\n        });\n        \n        if (downloadedImages.length === 0) {\n            return newData;\n        }\n        \n        return newData.concat({ ...item, images: downloadedImages });\n    }, []);\n}\n*/"
         },
-        "maxItems":{
-            "title": "Max items",
-            "type": "integer",
-            "description": "You can restrict the number of items (not images) which images will be downloaded. Useful for testing. Default is all items.",
-            "minimum": 1
-        },
         "concurrency":{
             "title": "Max concurrency",
             "type": "integer",
@@ -107,6 +101,13 @@
             "description": "Key-value store name where the images will be upload. Empty field means it will be uploaded to the default key-value store",
             "editor": "textfield"
         },
+        "proxyConfiguration": {
+            "title": "Proxy configuration",
+            "type": "object",
+            "description": "Select proxies to be used. First request is always tried without proxy because images are rarely blocked.",
+            "prefill": { "useApifyProxy": true },
+            "editor": "proxy"
+        },
         "s3Bucket":{
             "title": "S3 Bucket",
             "type": "string",
@@ -141,29 +142,13 @@
             "title": "Batch Size",
             "type": "integer",
             "description": "Number of items loaded from dataset in one batch.",
-            "minimum": 100,
+            "minimum": 1,
             "default": 10000
         },
         "convertWebpToPng": {
             "title": "Convert webp to png",
             "type": "boolean",
             "description": "If checked, the actor will automatically convert all webp type images to standard png. This increases the size of the image."
-        },
-        "noInfo": {
-            "title": "Propagate Sizes",
-            "type": "boolean",
-            "description": "If you want the state object to hold info about the image size."
-        },
-        "isDebug": {
-            "title": "Debug",
-            "type": "boolean",
-            "description": "Measures memory and times."
-        },
-        "continueRunId": {
-            "title": "Continue Run ID",
-            "type": "string",
-            "description": "Id of the run you want to continue (load its state of start)",
-            "editor": "textfield"
         }
     }
 }

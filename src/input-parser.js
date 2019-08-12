@@ -1,7 +1,7 @@
 const Apify = require('apify');
 
-const { defaultFileNameFunction, defaultPostDownloadFunction } = require('./default-functions');
-const { DATASET_BATCH_SIZE, REQUEST_EXTERNAL_TIMEOUT } = require('./constants.js');
+const { defaultFileNameFunction } = require('./default-functions');
+const { DEFAULT_BATCH_SIZE, DEFAULT_REQUEST_EXTERNAL_TIMEOUT } = require('./constants.js');
 const { setS3 } = require('./utils.js');
 
 module.exports.constantsFromInput = async (input) => {
@@ -13,8 +13,7 @@ module.exports.constantsFromInput = async (input) => {
         outputTo,
         fileNameFunction = defaultFileNameFunction,
         preDownloadFunction,
-        postDownloadFunction = defaultPostDownloadFunction,
-        maxItems,
+        postDownloadFunction,
         concurrency,
         imageCheckType = 'content-type',
         imageCheckMinSize,
@@ -27,11 +26,10 @@ module.exports.constantsFromInput = async (input) => {
         s3SecretAccessKey,
         s3CheckIfAlreadyThere,
         convertWebpToPng,
-        downloadTimeout = REQUEST_EXTERNAL_TIMEOUT,
-        batchSize = DATASET_BATCH_SIZE,
-        isDebug = false,
-        noInfo = false,
-        continueRunId = null,
+        downloadTimeout = DEFAULT_REQUEST_EXTERNAL_TIMEOUT,
+        batchSize = DEFAULT_BATCH_SIZE,
+        stateFields,
+        proxyConfiguration,
     } = input;
 
     const imageCheck = {
@@ -50,15 +48,15 @@ module.exports.constantsFromInput = async (input) => {
     const downloadOptions = {
         downloadTimeout,
         maxRetries: imageCheckMaxRetries,
+        proxyConfiguration,
     };
-    const downloadUploadOptions = { downloadOptions, uploadOptions, isDebug };
+    const downloadUploadOptions = { downloadOptions, uploadOptions };
 
     const finalInput = {
         mainInput: {
             inputId,
             batchSize,
             recordKey,
-            continueRunId,
         },
         iterationInput: {
             uploadTo,
@@ -67,15 +65,13 @@ module.exports.constantsFromInput = async (input) => {
             fileNameFunction,
             preDownloadFunction,
             postDownloadFunction,
-            maxItems,
             concurrency,
             s3CheckIfAlreadyThere,
             convertWebpToPng,
             batchSize,
-            isDebug,
-            noInfo,
             imageCheck,
             downloadUploadOptions,
+            stateFields,
         },
     };
     return finalInput;

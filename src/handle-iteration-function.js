@@ -3,13 +3,14 @@ const Apify = require('apify');
 const objectPath = require('object-path');
 const md5 = require('md5');
 
-const path = require('path');
-const fs = require('fs');
+// const path = require('path');
+// const fs = require('fs');
 // const heapdump = require('heapdump');
 
 const { downloadUpload } = require('./download-upload');
+const { checkIfAlreadyOnS3 } = require('./utils.js');
 
-module.exports.iterationProcess = async (inputData, inputIteration, iterationIndex, stats) => {
+module.exports = async ({ inputData, iterationInput, iterationIndex, stats, originalInput }) => {
     const props = stats.getProps();
 
     // periodially displaying stats
@@ -25,12 +26,12 @@ module.exports.iterationProcess = async (inputData, inputIteration, iterationInd
         fileNameFunction,
         preDownloadFunction,
         postDownloadFunction,
-        maxItems,
         concurrency,
         s3CheckIfAlreadyThere,
         imageCheck,
         downloadUploadOptions,
-    } = inputIteration;
+        stateFields,
+    } = iterationInput;
     console.log('loading state...');
 
     const images = (await Apify.getValue(`STATE-IMAGES-${iterationIndex}`)) || {};
@@ -64,8 +65,6 @@ module.exports.iterationProcess = async (inputData, inputIteration, iterationInd
         throw new Error('We loaded no data from the specified inputId, aborting the run!');
     }
 
-    inputData = inputData.slice(0, maxItems);
-
     if (inputData.length === 0) throw new Error("Didn't load any items from kv store or dataset");
 
     console.log(`We got ${inputData.length} items in iteration index: ${iterationIndex}`);
@@ -76,7 +75,7 @@ module.exports.iterationProcess = async (inputData, inputIteration, iterationInd
         try {
             console.log('Transforming items with pre download function');
             console.log(preDownloadFunction);
-            inputData = await preDownloadFunction(inputData);
+            inputData = await preDownloadFunction({ inputData, iterationIndex, input: originalInput });
             console.log(`We got ${inputData.length} after pre download`);
         } catch (e) {
             console.dir(e);
@@ -88,7 +87,6 @@ module.exports.iterationProcess = async (inputData, inputIteration, iterationInd
     stats.add(props.itemsSkipped, itemsSkippedCount, updateStats);
 
     // add images to state
-    let imageIndex = 0;
     try {
         inputData.forEach((item, itemIndex) => {
             if (item.skipDownload) return; // we skip item with this field
@@ -113,34 +111,24 @@ module.exports.iterationProcess = async (inputData, inputIteration, iterationInd
                 if (images[image] === undefined) { // undefined means they were not yet added
                     images[image] = {
                         itemIndex,
-                        imageIndex,
                     }; // false means they were not yet downloaded / uploaded or the process failed
-                    imageIndex++;
                 } else if (typeof images[image] === 'object' && images[image].fromState) {
                     // stats.inc(props.imagesDownloadedPreviously, updateStats);
                 } else {
+                    if (!images[image].duplicateIndexes) {
+                        images[image].duplicateIndexes = [];
+                    }
+                    if (!images[image].duplicateIndexes.includes(itemIndex)) {
+                        images[image].duplicateIndexes.push(itemIndex);
+                    }
                     stats.inc(props.imagesDuplicates, updateStats);
                 }
             });
         });
     } catch (e) {
         console.dir(e);
-        throw new Error('Adding images to state failed with error:', e.message);
+        throw new Error('Adding images to state failed with error:', e);
     }
-
-    const checkIfAlreadyOnS3 = async (key, uploadOptionsPassed) => {
-        try {
-            const data = await uploadOptionsPassed.s3Client.headObject({
-                Key: key,
-            }).promise();
-            if (data.ContentLength > 0) {
-                return { isThere: true, errors: [] };
-            }
-            return { isThere: false, errors: [] };
-        } catch (e) {
-            return { isThere: false, errors: [e.message] };
-        }
-    };
 
     const requestList = new Apify.RequestList({ sources: Object.keys(images).map((url, index) => ({ url, userData: { index } })) });
     await requestList.initialize();
@@ -148,31 +136,43 @@ module.exports.iterationProcess = async (inputData, inputIteration, iterationInd
     iterationState[iterationIndex].started = true;
     await Apify.setValue('STATE-ITERATION', iterationState);
 
+    const filterStateFields = (stateObject, fields) => {
+        if (!fields) {
+            return stateObject;
+        }
+        const newObject = {
+            imageUploaded: stateObject.imageUploaded
+        };
+        fields.forEach((field) => {
+            newObject[field] = stateObject[field];
+        })
+        return newObject;
+    }
+
     const handleRequestFunction = async ({ request }) => {
         const { url } = request;
         const { index } = request.userData;
 
         if (typeof images[url].imageUploaded === 'boolean') return; // means it was already download before
-        const itemOfImage = inputData[images[url].itemIndex];
-        const key = fileNameFunction(url, md5, index, itemOfImage, iterationIndex);
+        const item = inputData[images[url].itemIndex];
+        const key = fileNameFunction({ url, md5, index, item, iterationIndex });
         if (s3CheckIfAlreadyThere && uploadTo === 's3') {
             const { isThere, errors } = await checkIfAlreadyOnS3(key, downloadUploadOptions.uploadOptions);
             if (isThere) {
-                images[url] = {
-                    imageUploaded: true, // not really uploaded but we need to add this status
-                    errors,
-                };
+                images[url].imageUploaded = true; // not really uploaded but we need to add this status
+                images[url].errors = errors;
+                images[url] = filterStateFields(images[url], stateFields);
                 stats.inc(props.imagesAlreadyOnS3, true);
                 return;
             }
         }
         const info = await downloadUpload(url, key, downloadUploadOptions, imageCheck);
-        if (downloadUploadOptions.isDebug) {
-            stats.add(props.timeSpentDownloading, info.time.downloading, true);
-            stats.add(props.timeSpentProcessing, info.time.processing, true);
-            stats.add(props.timeSpentUploading, info.time.uploading, true);
-        }
-        images[url] = info;
+        stats.add(props.timeSpentDownloading, info.time.downloading, true);
+        stats.add(props.timeSpentProcessing, info.time.processing, true);
+        stats.add(props.timeSpentUploading, info.time.uploading, true);
+
+        images[url] = { ...images[url], ...info };
+        images[url] = filterStateFields(images[url], stateFields);
         if (info.imageUploaded) {
             stats.inc(props.imagesUploaded, true);
         } else {
@@ -205,7 +205,8 @@ module.exports.iterationProcess = async (inputData, inputIteration, iterationInd
 
     console.log(`All images in iteration ${iterationIndex} were processed`);
 
-    // For debugging memory leak, remove later
+    // TODO: Until fixed, move this to separate fork
+    /*
     if (downloadUploadOptions.isDebug) {
         const dumpName = `${Date.now()}-${iterationIndex}.heapsnapshot`;
         const dumpPath = path.join(__dirname, dumpName);
@@ -217,12 +218,13 @@ module.exports.iterationProcess = async (inputData, inputIteration, iterationInd
         const dumpBuff = fs.readFileSync(dumpPath);
         await Apify.setValue(dumpName, dumpBuff, { contentType: 'application/octet-stream' });
     }
+    */
 
     // postprocessing function
     if ((outputTo && outputTo !== 'no-output')) {
         console.log('Will save output data to:', outputTo);
         let processedData = postDownloadFunction
-            ? await postDownloadFunction(inputData, images, fileNameFunction, md5, iterationIndex)
+            ? await postDownloadFunction({ data: inputData, state, fileNameFunction, md5, iterationIndex })
             : inputData;
         console.log('Post-download processed data length:', processedData.length);
 
@@ -259,7 +261,6 @@ module.exports.iterationProcess = async (inputData, inputIteration, iterationInd
     };
     await Apify.setValue('STATE-ITERATION', iterationState);
     await Apify.setValue(`STATE-IMAGES-${iterationIndex}`, images);
-    inputData = null;
     console.log('END OF ITERATION STATS:');
     stats.display();
 };

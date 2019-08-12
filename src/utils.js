@@ -19,59 +19,58 @@ module.exports.setS3 = (credentials) => {
     return s3;
 };
 
-const loadItems = async ({ id, callback, batchSize, iterationInput, stats }, offset = 0, iterationIndex = 0) => {
-    let newItems;
-    const limit = batchSize;
+// Simple recursive load from dataset
+const loadItems = async ({ datasetId, from, to }, offset = 0, items = []) => {
+    const maxLoad = 250000;
+    const itemCountToLoad = to - (from + offset);
+    const limit = Math.min(itemCountToLoad, maxLoad);
+    if (limit <= 0) {
+        return items;
+    }
 
-    console.log('loading from dataset');
-    newItems = await Apify.client.datasets.getItems({
-        datasetId: id,
-        offset,
+    const newItems = await Apify.client.datasets.getItems({
+        datasetId,
+        offset: from,
         limit,
-    }).then((res) => res.items).catch(console.log);
+    }).then((res) => res.items);
+    console.log(`LOADED DATA --- From: ${from}, Limit: ${limit}`);
 
-    if (!newItems || newItems.length === 0) {
-        return;
+    items = items.concat(newItems);
+    if (newItems.length < limit) {
+        return items;
     }
-    await callback(newItems, iterationInput, iterationIndex, stats);
-    newItems = null;
-    await loadItems({ id, callback, batchSize, iterationInput, stats }, offset + limit, iterationIndex + 1);
-};
+    return loadItems({ datasetId, from, to }, offset + maxLoad, items);
+}
 
-module.exports.loadItems = loadItems;
-
-const copyStoreFromRun = async (oldRunId) => {
-    const { defaultKeyValueStoreId } = await Apify.client.acts.getRun({ runId: oldRunId, actId: process.env.APIFY_ACTOR_ID || 'SEQBnEA5oe2R9Hgdj' });
-    const keys = await Apify.client.keyValueStores.listKeys({ storeId: defaultKeyValueStoreId })
-        .then((res) => res.items.map((keyObj) => keyObj.key));
-    const store = await Apify.openKeyValueStore();
-    for (const key of keys) {
-        console.log('Copying key to the current store:', key);
-        const data = await Apify.client.keyValueStores.getRecord({ storeId: defaultKeyValueStoreId, key }).then((res) => res.body);
-        await store.setValue(key, data);
-    }
-};
-
-module.exports.copyStoreFromRun = copyStoreFromRun;
-
-/*
-module.exports.getObjectWithAllKeysFromS3 = async (s3, domain) => {
-    const objectWithAllKeys = {};
-    let lastKey = null;
+const loadAndProcessItems = async ({ datasetId, handleIterationFunction, batchSize, iterationInput, stats, iterationIndex, originalInput }) => {
+    // The outer loop is for each batch (where you have access to the whole state of the batch)
     while (true) {
-        const payload = { Prefix: domain, Marker: lastKey };
-        console.dir(payload);
-        const response = await s3.listObjects(payload).promise();
-        const keys = response.Contents.map((item) => item.Key);
-        console.log(`loaded ${keys.length} keys from S3`);
-        if (keys.length === 0) {
-            console.log(`loaded total ${Object.keys(objectWithAllKeys).length} keys from S3`);
-            return objectWithAllKeys;
+        const start = iterationIndex * batchSize
+        const items = await loadItems({ datasetId, from: start, to: start + batchSize });
+        console.log(`ITERATION START --- Iteration: ${iterationIndex}, Loaded count: ${items.length}`);
+        // There is no more data to load, we download the rest of the images and finish
+        if (items.length === 0) {
+            return;
         }
-        keys.forEach((key) => {
-            objectWithAllKeys[key] = true;
-        });
-        lastKey = keys[keys.length - 1];
+        await handleIterationFunction({ inputData: items, iterationInput, iterationIndex, stats, originalInput });
+        iterationIndex++;
     }
 };
-*/
+
+module.exports.loadAndProcessItems = loadAndProcessItems;
+
+const checkIfAlreadyOnS3 = async (key, uploadOptionsPassed) => {
+    try {
+        const data = await uploadOptionsPassed.s3Client.headObject({
+            Key: key,
+        }).promise();
+        if (data.ContentLength > 0) {
+            return { isThere: true, errors: [] };
+        }
+        return { isThere: false, errors: [] };
+    } catch (e) {
+        return { isThere: false, errors: [e.message] };
+    }
+};
+
+module.exports.checkIfAlreadyOnS3 = checkIfAlreadyOnS3;

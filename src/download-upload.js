@@ -50,8 +50,11 @@ const upload = async (key, buffer, uploadOptions) => {
 };
 
 const download = async (url, imageCheck, key, downloadOptions) => {
-    const { downloadTimeout, maxRetries } = downloadOptions;
+    const { downloadTimeout, maxRetries, proxyConfiguration } = downloadOptions;
 
+    const proxyUrl = proxyConfiguration && proxyConfiguration.useApifyProxy
+        ? Apify.getApifyProxyUrl({ groups: proxyConfiguration.apifyProxyGroups })
+        : null;
     const normalOptions = {
         strictSSL: false,
         url,
@@ -60,7 +63,7 @@ const download = async (url, imageCheck, key, downloadOptions) => {
     };
     const proxyOptions = {
         ...normalOptions,
-        proxy: PROXY_URL,
+        proxy: proxyUrl,
     };
     const errors = [];
     let imageDownloaded = false;
@@ -107,6 +110,8 @@ const download = async (url, imageCheck, key, downloadOptions) => {
         if (!retry) break;
     }
 
+    const retryCount = errors.length;
+
     // converting to other mime
     if (imageDownloaded && contentTypeMain === 'image/webp' && imageCheck.convertWebpToPng) {
         const startProcessing = Date.now();
@@ -122,6 +127,7 @@ const download = async (url, imageCheck, key, downloadOptions) => {
     return {
         response,
         errors,
+        retryCount,
         imageDownloaded,
         timeDownloading,
         timeProcessing,
@@ -131,7 +137,7 @@ const download = async (url, imageCheck, key, downloadOptions) => {
 };
 
 module.exports.downloadUpload = async (url, key, downloadUploadOptions, imageCheck) => {
-    const { downloadOptions, uploadOptions, isDebug } = downloadUploadOptions;
+    const { downloadOptions, uploadOptions } = downloadUploadOptions;
     const errors = [];
     const time = {
         downloading: 0,
@@ -149,6 +155,8 @@ module.exports.downloadUpload = async (url, key, downloadUploadOptions, imageChe
     }
 
     const {
+        retryCount,
+        contentType,
         response,
         errors: downloadErrors,
         imageDownloaded,
@@ -175,9 +183,11 @@ module.exports.downloadUpload = async (url, key, downloadUploadOptions, imageChe
     });
     const infoObject = {
         imageUploaded,
-        errors: deduplicateErrors(errors),
     };
     if (!imageCheck.noInfo) {
+        infoObject.errors = deduplicateErrors(errors);
+        infoObject.retryCount = retryCount;
+        infoObject.contentType = contentType;
         infoObject.sizes = sizes;
         infoObject.time = time;
     }

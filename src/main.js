@@ -1,9 +1,9 @@
 const Apify = require('apify');
 
 const { Stats } = require('./stats');
-const { loadItems, hideTokenFromInput, copyStoreFromRun } = require('./utils');
+const { loadAndProcessItems, hideTokenFromInput } = require('./utils');
 const { checkInput, constantsFromInput } = require('./input-parser');
-const { iterationProcess } = require('./iteration-process.js');
+const handleIterationFunction = require('./handle-iteration-function.js');
 
 Apify.main(async () => {
     let input = await Apify.getValue('INPUT');
@@ -14,11 +14,7 @@ Apify.main(async () => {
 
     const { mainInput, iterationInput } = await constantsFromInput(input);
 
-    const { inputId, batchSize, recordKey, continueRunId } = mainInput;
-
-    if (continueRunId) {
-        await copyStoreFromRun(continueRunId);
-    }
+    const { inputId, batchSize, recordKey } = mainInput;
 
     // Stats init
     const statsState = await Apify.getValue('stats-state');
@@ -46,17 +42,20 @@ Apify.main(async () => {
         console.log('loading from dataset');
         const isDataset = await Apify.client.datasets.getDataset({
             datasetId: inputId,
-        }).catch(() => console.log('Dataset not found we will try crawler.'));
+        }).catch(() => console.log('Dataset not found we will try key-value store.'));
 
         if (isDataset) {
             const { itemCount } = await Apify.client.datasets.getDataset({ datasetId: inputId });
             stats.set(props.itemsTotal, itemCount, true);
-            console.log(`Starting iteration index: ${iterationIndex}`);
-            await loadItems(
-                { id: inputId, type: 'dataset', callback: iterationProcess, batchSize, iterationInput, stats },
-                iterationIndex * batchSize,
+            await loadAndProcessItems({
+                datasetId: inputId,
+                handleIterationFunction,
+                batchSize,
                 iterationIndex,
-            );
+                iterationInput,
+                stats,
+                originalInput: input
+            });
         } else {
             console.log('loading from kvStore');
             console.log('record key: ', recordKey, 'inputId:', inputId);
@@ -66,7 +65,7 @@ Apify.main(async () => {
             if (keyValueStore && Array.isArray(keyValueStore.body)) {
                 console.log('We got items from kv, count:', keyValueStore.body.length);
                 stats.set(props.itemsTotal, keyValueStore.body.length, true);
-                await iterationProcess(keyValueStore.body, iterationInput, 0, stats);
+                await handleIterationFunction({ inputData: keyValueStore.body, iterationInput, iterationIndex: 0, stats, originalInput: input });
             } else {
                 console.log('We cannot load data from kv store because they are not in a proper format');
             }

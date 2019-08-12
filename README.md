@@ -17,6 +17,13 @@ This is detailed documentation of the actor. If you rather want a quick-start wi
 
 ## Changelog
 
+#### Version-2
+- Removed `continueRunId` from input. Use [actor resurrect](https://apify.com/docs/actor#run-resurrect) feature instead.
+- `batchSize` can have now arbitrary size. Previously it was limited to max dataset load (250,000).
+- Removed `maxItems`. You can use `predownloadFunction` to manipulate input data.
+- Added `stateFields` for a possibility to clean log and decrease memory usage of big batches.
+- Added `duplicatesIndexes` to state object for abillity to track duplicates.
+
 ## Limits
 - It is better to split downloading of more than 200k images into more runs due to memory constrains.
 - Keep in mind that if you don't have enough proxies, some websites can block you fairly quickly (even though images aren't usually that protected)
@@ -52,6 +59,7 @@ Most of Apify actors require a JSON input and this one is no exception. The inpu
     `s3AccessKeyId`: <[string](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#String_type)> Your S3 access key id. You need to set `uploadTo` to `s3`.
     `s3SecretAccessKey`: <[string](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#String_type)> Your S3 secret access key. You need to set `uploadTo` to `s3`.
     `s3CheckIfAlreadyThere`: <[boolean](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#Boolean_type)> If set to `true` it will check your S3 bucket if the image file is already there before uploading. Reading is much cheaper than writing so this is useful to save money if you do a lot of reuploads. **Default**: `false`.
+    `statsFields`: <[array](https://developer.mozilla.org/cs/docs/Web/JavaScript/Reference/Global_Objects/Array)> Array of stats fields you want to be present in the state object. Useful if you want cleaner log or less memory usage.
 
 ## Data and image paths
 The data where the image URLs are located needs to be saved on [Apify storage](https://apify.com/docs/storage) either in [key-value store](https://apify.com/docs/storage#key-value-store) or [dataset](https://apify.com/docs/storage#dataset). If you don't have the data already there, you can simply upload them with a single API call for key-value store or dataset.
