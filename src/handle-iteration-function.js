@@ -130,7 +130,7 @@ module.exports = async ({ data, iterationInput, iterationIndex, stats, originalI
         throw new Error('Adding images to state failed with error:', e);
     }
 
-    const requestList = new Apify.RequestList({ sources: Object.keys(state).map((url, index) => ({ url, userData: { index } })) });
+    const requestList = new Apify.RequestList({ sources: Object.keys(state).map((url) => ({ url })) });
     await requestList.initialize();
 
     iterationState[iterationIndex].started = true;
@@ -151,11 +151,10 @@ module.exports = async ({ data, iterationInput, iterationIndex, stats, originalI
 
     const handleRequestFunction = async ({ request }) => {
         const { url } = request;
-        const { index } = request.userData;
 
         if (typeof state[url].imageUploaded === 'boolean') return; // means it was already download before
         const item = data[state[url].itemIndex];
-        const key = fileNameFunction({ url, md5, index, item, iterationIndex });
+        const key = fileNameFunction({ url, md5, state, item, iterationIndex });
         if (s3CheckIfAlreadyThere && uploadTo === 's3') {
             const { isThere, errors } = await checkIfAlreadyOnS3(key, downloadUploadOptions.uploadOptions);
             if (isThere) {
