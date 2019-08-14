@@ -10,8 +10,8 @@
             "description": "Id of dataset, crawler execution or key value store where the data are located. Image URLs will be extracted from there.",
             "editor": "textfield"
         },
-        "recordKey": {
-            "title": "Record Key",
+        "inputRecordKey": {
+            "title": "Input record Key",
             "type": "string",
             "description": "Only specify if input id points to a key value store! This is the record key under which the data are.",
             "editor": "textfield"
