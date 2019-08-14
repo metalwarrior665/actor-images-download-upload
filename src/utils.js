@@ -52,7 +52,7 @@ const loadAndProcessItems = async ({ datasetId, handleIterationFunction, batchSi
         if (items.length === 0) {
             return;
         }
-        await handleIterationFunction({ inputData: items, iterationInput, iterationIndex, stats, originalInput });
+        await handleIterationFunction({ data: items, iterationInput, iterationIndex, stats, originalInput });
         iterationIndex++;
     }
 };

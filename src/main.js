@@ -65,7 +65,7 @@ Apify.main(async () => {
             if (keyValueStore && Array.isArray(keyValueStore.body)) {
                 console.log('We got items from kv, count:', keyValueStore.body.length);
                 stats.set(props.itemsTotal, keyValueStore.body.length, true);
-                await handleIterationFunction({ inputData: keyValueStore.body, iterationInput, iterationIndex: 0, stats, originalInput: input });
+                await handleIterationFunction({ data: keyValueStore.body, iterationInput, iterationIndex: 0, stats, originalInput: input });
             } else {
                 console.log('We cannot load data from kv store because they are not in a proper format');
             }

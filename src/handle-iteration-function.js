@@ -10,7 +10,7 @@ const md5 = require('md5');
 const { downloadUpload } = require('./download-upload');
 const { checkIfAlreadyOnS3 } = require('./utils.js');
 
-module.exports = async ({ inputData, iterationInput, iterationIndex, stats, originalInput }) => {
+module.exports = async ({ data, iterationInput, iterationIndex, stats, originalInput }) => {
     const props = stats.getProps();
 
     // periodially displaying stats
@@ -34,7 +34,7 @@ module.exports = async ({ inputData, iterationInput, iterationIndex, stats, orig
     } = iterationInput;
     console.log('loading state...');
 
-    const images = (await Apify.getValue(`STATE-IMAGES-${iterationIndex}`)) || {};
+    const state = (await Apify.getValue(`STATE-IMAGES-${iterationIndex}`)) || {};
 
     const iterationState = await Apify.getValue('STATE-ITERATION');
     if (!iterationState[iterationIndex]) {
@@ -47,27 +47,27 @@ module.exports = async ({ inputData, iterationInput, iterationIndex, stats, orig
     }
 
     console.log('images loaded from state:');
-    console.log(`Uploaded: ${Object.values(images).filter((val) => val.imageUploaded).length}`);
-    console.log(`Failed: ${Object.values(images).filter((val) => val.imageUploaded === false).length}`);
-    console.log(`Not yet handled: ${Object.values(images).filter((val) => val.imageUploaded === undefined).length}`);
+    console.log(`Uploaded: ${Object.values(state).filter((val) => val.imageUploaded).length}`);
+    console.log(`Failed: ${Object.values(state).filter((val) => val.imageUploaded === false).length}`);
+    console.log(`Not yet handled: ${Object.values(state).filter((val) => val.imageUploaded === undefined).length}`);
 
     // SAVING STATE
     const stateInterval = setInterval(async () => {
-        await Apify.setValue(`STATE-IMAGES-${iterationIndex}`, images);
+        await Apify.setValue(`STATE-IMAGES-${iterationIndex}`, state);
     }, 10 * 1000);
 
-    Object.keys(images).forEach((key) => {
-        images[key].fromState = true;
+    Object.keys(state).forEach((key) => {
+        state[key].fromState = true;
     });
 
     const updateStats = !iterationState[iterationIndex].started;
-    if (inputData.length === 0) {
+    if (data.length === 0) {
         throw new Error('We loaded no data from the specified inputId, aborting the run!');
     }
 
-    if (inputData.length === 0) throw new Error("Didn't load any items from kv store or dataset");
+    if (data.length === 0) throw new Error("Didn't load any items from kv store or dataset");
 
-    console.log(`We got ${inputData.length} items in iteration index: ${iterationIndex}`);
+    console.log(`We got ${data.length} items in iteration index: ${iterationIndex}`);
     console.log('STARTING DOWNLOAD');
 
     // filtering items
@@ -75,20 +75,20 @@ module.exports = async ({ inputData, iterationInput, iterationIndex, stats, orig
         try {
             console.log('Transforming items with pre download function');
             console.log(preDownloadFunction);
-            inputData = await preDownloadFunction({ inputData, iterationIndex, input: originalInput });
-            console.log(`We got ${inputData.length} after pre download`);
+            data = await preDownloadFunction({ data, iterationIndex, input: originalInput });
+            console.log(`We got ${data.length} after pre download`);
         } catch (e) {
             console.dir(e);
             throw new Error('Pre download function failed with error');
         }
     }
 
-    const itemsSkippedCount = inputData.filter((item) => !!item.skipDownload).length;
+    const itemsSkippedCount = data.filter((item) => !!item.skipDownload).length;
     stats.add(props.itemsSkipped, itemsSkippedCount, updateStats);
 
     // add images to state
     try {
-        inputData.forEach((item, itemIndex) => {
+        data.forEach((item, itemIndex) => {
             if (item.skipDownload) return; // we skip item with this field
             let imagesFromPath = objectPath.get(item, pathToImageUrls);
             if (!Array.isArray(imagesFromPath) && typeof imagesFromPath !== 'string') {
@@ -108,18 +108,18 @@ module.exports = async ({ inputData, iterationInput, iterationIndex, stats, orig
                     stats.inc(props.imagesNotString, updateStats);
                     return;
                 }
-                if (images[image] === undefined) { // undefined means they were not yet added
-                    images[image] = {
+                if (state[image] === undefined) { // undefined means they were not yet added
+                    state[image] = {
                         itemIndex,
                     }; // false means they were not yet downloaded / uploaded or the process failed
-                } else if (typeof images[image] === 'object' && images[image].fromState) {
+                } else if (typeof state[image] === 'object' && state[image].fromState) {
                     // stats.inc(props.imagesDownloadedPreviously, updateStats);
                 } else {
-                    if (!images[image].duplicateIndexes) {
-                        images[image].duplicateIndexes = [];
+                    if (!state[image].duplicateIndexes) {
+                        state[image].duplicateIndexes = [];
                     }
-                    if (!images[image].duplicateIndexes.includes(itemIndex)) {
-                        images[image].duplicateIndexes.push(itemIndex);
+                    if (!state[image].duplicateIndexes.includes(itemIndex)) {
+                        state[image].duplicateIndexes.push(itemIndex);
                     }
                     stats.inc(props.imagesDuplicates, updateStats);
                 }
@@ -130,7 +130,7 @@ module.exports = async ({ inputData, iterationInput, iterationIndex, stats, orig
         throw new Error('Adding images to state failed with error:', e);
     }
 
-    const requestList = new Apify.RequestList({ sources: Object.keys(images).map((url, index) => ({ url, userData: { index } })) });
+    const requestList = new Apify.RequestList({ sources: Object.keys(state).map((url, index) => ({ url, userData: { index } })) });
     await requestList.initialize();
 
     iterationState[iterationIndex].started = true;
@@ -153,15 +153,15 @@ module.exports = async ({ inputData, iterationInput, iterationIndex, stats, orig
         const { url } = request;
         const { index } = request.userData;
 
-        if (typeof images[url].imageUploaded === 'boolean') return; // means it was already download before
-        const item = inputData[images[url].itemIndex];
+        if (typeof state[url].imageUploaded === 'boolean') return; // means it was already download before
+        const item = data[state[url].itemIndex];
         const key = fileNameFunction({ url, md5, index, item, iterationIndex });
         if (s3CheckIfAlreadyThere && uploadTo === 's3') {
             const { isThere, errors } = await checkIfAlreadyOnS3(key, downloadUploadOptions.uploadOptions);
             if (isThere) {
-                images[url].imageUploaded = true; // not really uploaded but we need to add this status
-                images[url].errors = errors;
-                images[url] = filterStateFields(images[url], stateFields);
+                state[url].imageUploaded = true; // not really uploaded but we need to add this status
+                state[url].errors = errors;
+                state[url] = filterStateFields(state[url], stateFields);
                 stats.inc(props.imagesAlreadyOnS3, true);
                 return;
             }
@@ -171,8 +171,8 @@ module.exports = async ({ inputData, iterationInput, iterationIndex, stats, orig
         stats.add(props.timeSpentProcessing, info.time.processing, true);
         stats.add(props.timeSpentUploading, info.time.uploading, true);
 
-        images[url] = { ...images[url], ...info };
-        images[url] = filterStateFields(images[url], stateFields);
+        state[url] = { ...state[url], ...info };
+        state[url] = filterStateFields(state[url], stateFields);
         if (info.imageUploaded) {
             stats.inc(props.imagesUploaded, true);
         } else {
@@ -224,8 +224,8 @@ module.exports = async ({ inputData, iterationInput, iterationIndex, stats, orig
     if ((outputTo && outputTo !== 'no-output')) {
         console.log('Will save output data to:', outputTo);
         let processedData = postDownloadFunction
-            ? await postDownloadFunction({ data: inputData, state, fileNameFunction, md5, iterationIndex })
-            : inputData;
+            ? await postDownloadFunction({ data, state, fileNameFunction, md5, iterationIndex })
+            : data;
         console.log('Post-download processed data length:', processedData.length);
 
         if (outputTo === 'key-value-store') {
@@ -260,7 +260,7 @@ module.exports = async ({ inputData, iterationInput, iterationIndex, stats, orig
         pushed: 0,
     };
     await Apify.setValue('STATE-ITERATION', iterationState);
-    await Apify.setValue(`STATE-IMAGES-${iterationIndex}`, images);
+    await Apify.setValue(`STATE-IMAGES-${iterationIndex}`, state);
     console.log('END OF ITERATION STATS:');
     stats.display();
 };
