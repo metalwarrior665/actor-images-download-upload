@@ -31,6 +31,7 @@ module.exports = async ({ data, iterationInput, iterationIndex, stats, originalI
         imageCheck,
         downloadUploadOptions,
         stateFields,
+        blankRun,
     } = iterationInput;
     console.log('loading state...');
 
@@ -165,7 +166,10 @@ module.exports = async ({ data, iterationInput, iterationIndex, stats, originalI
                 return;
             }
         }
-        const info = await downloadUpload(url, key, downloadUploadOptions, imageCheck);
+        // We provide an option for a dummy run to check duplicates etc.
+        const info = blankRun
+            ? { imageUploaded: true, time: { downloading: 0, processing: 0, uploading: 0 }}
+            : await downloadUpload(url, key, downloadUploadOptions, imageCheck);
         stats.add(props.timeSpentDownloading, info.time.downloading, true);
         stats.add(props.timeSpentProcessing, info.time.processing, true);
         stats.add(props.timeSpentUploading, info.time.uploading, true);

@@ -149,6 +149,11 @@
             "title": "Convert webp to png",
             "type": "boolean",
             "description": "If checked, the actor will automatically convert all webp type images to standard png. This increases the size of the image."
+        },
+        "blankRun": {
+            "title": "Blank run",
+            "type": "boolean",
+            "description": "If checked, the actor will not download and upload the images. Usefull for checking duplicates or transformations."
         }
     }
 }

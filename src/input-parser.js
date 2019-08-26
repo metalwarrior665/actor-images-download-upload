@@ -30,6 +30,7 @@ module.exports.constantsFromInput = async (input) => {
         batchSize = DEFAULT_BATCH_SIZE,
         stateFields,
         proxyConfiguration,
+        blankRun = false,
     } = input;
 
     const imageCheck = {
@@ -72,6 +73,7 @@ module.exports.constantsFromInput = async (input) => {
             imageCheck,
             downloadUploadOptions,
             stateFields,
+            blankRun,
         },
     };
     return finalInput;
