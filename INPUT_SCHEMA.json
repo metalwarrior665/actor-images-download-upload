@@ -36,8 +36,7 @@
             "type": "string",
             "description": "Function that specifies how will be the data transformed before downloading the image. The input and output of the function is the whole data array. You can skip downloading images of any item if you add skipItem: true field to it.",
             "editor": "javascript",
-            "prefill": "/* Example: We get rid of the items with price 0\n(inputData) => inputData.filter((item) => item.price > 0)\n*/",
-            "sectionCaption": "Transforming functions"
+            "prefill": "/* Example: We get rid of the items with price 0\n(inputData) => inputData.filter((item) => item.price > 0)\n*/"
         },
         "postDownloadFunction": {
             "title": "Post-download function",
@@ -50,8 +49,7 @@
             "title": "Input record Key",
             "type": "string",
             "description": "Only specify if input id points to a key value store! This is the record key under which the data are.",
-            "editor": "textfield",
-            "sectionCaption": "Input options"
+            "editor": "textfield"
         },
         "limit": {
             "title": "Limit",
@@ -70,8 +68,7 @@
             "type": "integer",
             "description": "How many times should actor retry if the file it tries to download fails to pass the tests. Setting this too high can lead to unecessary loops.",
             "minimum": 0,
-            "default": 1,
-            "sectionCaption": "Image quality check options"
+            "default": 1
         },
         "imageCheckType": {
             "title": "Image check type",
@@ -138,8 +135,7 @@
             "type": "object",
             "description": "Select proxies to be used. First request is always tried without proxy because images are rarely blocked.",
             "prefill": { "useApifyProxy": true },
-            "editor": "proxy",
-            "sectionCaption": "Miscellaneous options"
+            "editor": "proxy"
         },
         "concurrency":{
             "title": "Max concurrency",
