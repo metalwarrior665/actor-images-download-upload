@@ -42,7 +42,7 @@ const loadItems = async ({ datasetId, from, to }, offset = 0, items = []) => {
     return loadItems({ datasetId, from, to }, offset + maxLoad, items);
 }
 
-const loadAndProcessItems = async ({ datasetId, handleIterationFunction, batchSize, iterationInput, stats, iterationIndex, originalInput, limit, offset }) => {
+const loadAndProcessItems = async ({ datasetId, handleIterationFunction, batchSize, iterationInput, stats, iterationIndex, originalInput, limit, offset = 0 }) => {
     const end = limit ? offset + limit : null;
     // The outer loop is for each batch (where you have access to the whole state of the batch)
     while (true) {
