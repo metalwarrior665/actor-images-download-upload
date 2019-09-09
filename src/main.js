@@ -14,7 +14,7 @@ Apify.main(async () => {
 
     const { mainInput, iterationInput } = await constantsFromInput(input);
 
-    const { inputId, batchSize, recordKey } = mainInput;
+    const { inputId, batchSize, recordKey, limit, offset } = mainInput;
 
     // Stats init
     const statsState = await Apify.getValue('stats-state');
@@ -54,7 +54,9 @@ Apify.main(async () => {
                 iterationIndex,
                 iterationInput,
                 stats,
-                originalInput: input
+                originalInput: input,
+                limit,
+                offset,
             });
         } else {
             console.log('loading from kvStore');

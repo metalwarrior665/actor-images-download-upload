@@ -42,11 +42,14 @@ const loadItems = async ({ datasetId, from, to }, offset = 0, items = []) => {
     return loadItems({ datasetId, from, to }, offset + maxLoad, items);
 }
 
-const loadAndProcessItems = async ({ datasetId, handleIterationFunction, batchSize, iterationInput, stats, iterationIndex, originalInput }) => {
+const loadAndProcessItems = async ({ datasetId, handleIterationFunction, batchSize, iterationInput, stats, iterationIndex, originalInput, limit, offset }) => {
+    const end = limit ? offset + limit : null;
     // The outer loop is for each batch (where you have access to the whole state of the batch)
     while (true) {
-        const start = iterationIndex * batchSize
-        const items = await loadItems({ datasetId, from: start, to: start + batchSize });
+        const start = iterationIndex * batchSize + offset;
+        const to = start + batchSize;
+        const limitedTo = end && end < to ? end : null;
+        const items = await loadItems({ datasetId, from: start, to: limitedTo || to });
         console.log(`ITERATION START --- Iteration: ${iterationIndex}, Loaded count: ${items.length}`);
         // There is no more data to load, we download the rest of the images and finish
         if (items.length === 0) {

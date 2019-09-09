@@ -6,30 +6,38 @@ const { setS3 } = require('./utils.js');
 
 module.exports.constantsFromInput = async (input) => {
     const {
-        uploadTo,
-        pathToImageUrls = '',
+        // main
         inputId,
-        recordKey,
         outputTo,
+        pathToImageUrls = '',
         fileNameFunction = defaultFileNameFunction,
+        // Transforming functions
         preDownloadFunction,
         postDownloadFunction,
-        concurrency,
+        // Input options
+        recordKey,
+        limit,
+        offset,
+        // Image check
         imageCheckType = 'content-type',
         imageCheckMinSize,
         imageCheckMinWidth,
         imageCheckMinHeight,
         imageCheckMaxRetries = 1,
+        // Upload
+        uploadTo,
         uploadStoreName,
         s3Bucket,
         s3AccessKeyId,
         s3SecretAccessKey,
         s3CheckIfAlreadyThere,
-        convertWebpToPng,
+        // Misc
+        proxyConfiguration,
+        concurrency,
+        stateFields,
         downloadTimeout = DEFAULT_REQUEST_EXTERNAL_TIMEOUT,
         batchSize = DEFAULT_BATCH_SIZE,
-        stateFields,
-        proxyConfiguration,
+        convertWebpToPng,
         blankRun = false,
     } = input;
 
@@ -58,6 +66,8 @@ module.exports.constantsFromInput = async (input) => {
             inputId,
             batchSize,
             recordKey,
+            limit,
+            offset,
         },
         iterationInput: {
             uploadTo,

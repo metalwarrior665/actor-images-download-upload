@@ -10,12 +10,6 @@
             "description": "Id of dataset, crawler execution or key value store where the data are located. Image URLs will be extracted from there.",
             "editor": "textfield"
         },
-        "inputRecordKey": {
-            "title": "Input record Key",
-            "type": "string",
-            "description": "Only specify if input id points to a key value store! This is the record key under which the data are.",
-            "editor": "textfield"
-        },
         "outputTo": {
             "title": "Output to",
             "type": "string",
@@ -42,7 +36,8 @@
             "type": "string",
             "description": "Function that specifies how will be the data transformed before downloading the image. The input and output of the function is the whole data array. You can skip downloading images of any item if you add skipItem: true field to it.",
             "editor": "javascript",
-            "prefill": "/* Example: We get rid of the items with price 0\n(inputData) => inputData.filter((item) => item.price > 0)\n*/"
+            "prefill": "/* Example: We get rid of the items with price 0\n(inputData) => inputData.filter((item) => item.price > 0)\n*/",
+            "sectionCaption": "Transforming functions"
         },
         "postDownloadFunction": {
             "title": "Post-download function",
@@ -51,18 +46,32 @@
             "editor": "javascript",
             "prefill": "/* Example: We remove items without any successfully uploaded images.\n We also remove any image URLs that were not uploaded\n \n (data, imagesObject, fileNameFunction, md5) => {\n    return data.reduce((newData, item) => {\n        const downloadedImages = item.images.filter((imageUrl) => {\n            return imagesObject[imageUrl] && imagesObject[imageUrl].imageUploaded;\n        });\n        \n        if (downloadedImages.length === 0) {\n            return newData;\n        }\n        \n        return newData.concat({ ...item, images: downloadedImages });\n    }, []);\n}\n*/"
         },
-        "concurrency":{
-            "title": "Max concurrency",
+        "inputRecordKey": {
+            "title": "Input record Key",
+            "type": "string",
+            "description": "Only specify if input id points to a key value store! This is the record key under which the data are.",
+            "editor": "textfield",
+            "sectionCaption": "Input options"
+        },
+        "limit": {
+            "title": "Limit",
             "type": "integer",
-            "description": "You can specify how many maximum parallel downloading/uploading requests will be running. Keep in mind that the limit is here to not overload the host server.",
-            "default": 40
+            "description": "Max items to load from the dataset. Use with `offset` to paginate over the data (can reduce memory requirement of large loads).",
+            "minimum": 0
+        },
+        "offset": {
+            "title": "Offset",
+            "type": "integer",
+            "description": "How many items to skip from the dataset. Use with `limit` to paginate over the data (can reduce memory requirement of large loads)",
+            "minimum": 0
         },
         "imageCheckMaxRetries":{
             "title": "Max retries",
             "type": "integer",
             "description": "How many times should actor retry if the file it tries to download fails to pass the tests. Setting this too high can lead to unecessary loops.",
             "minimum": 0,
-            "default": 1
+            "default": 1,
+            "sectionCaption": "Image quality check options"
         },
         "imageCheckType": {
             "title": "Image check type",
@@ -93,7 +102,8 @@
             "title": "Upload to",
             "type": "string",
             "description": "Where do you want to upload the image files",
-            "enum": ["key-value-store", "s3", "no-upload"]
+            "enum": ["key-value-store", "s3", "no-upload"],
+            "sectionCaption": "Upload settings"
         },
         "uploadStoreName": {
             "title": "Key-value store name",
@@ -101,13 +111,7 @@
             "description": "Key-value store name where the images will be upload. Empty field means it will be uploaded to the default key-value store",
             "editor": "textfield"
         },
-        "proxyConfiguration": {
-            "title": "Proxy configuration",
-            "type": "object",
-            "description": "Select proxies to be used. First request is always tried without proxy because images are rarely blocked.",
-            "prefill": { "useApifyProxy": true },
-            "editor": "proxy"
-        },
+
         "s3Bucket":{
             "title": "S3 Bucket",
             "type": "string",
@@ -131,6 +135,20 @@
             "type": "boolean",
             "description": "This option is useful if you don't want to rewrite the same image. GET requests are also cheaper than PUT requests"
         },
+        "proxyConfiguration": {
+            "title": "Proxy configuration",
+            "type": "object",
+            "description": "Select proxies to be used. First request is always tried without proxy because images are rarely blocked.",
+            "prefill": { "useApifyProxy": true },
+            "editor": "proxy",
+            "sectionCaption": "Miscellaneous options"
+        },
+        "concurrency":{
+            "title": "Max concurrency",
+            "type": "integer",
+            "description": "You can specify how many maximum parallel downloading/uploading requests will be running. Keep in mind that the limit is here to not overload the host server.",
+            "default": 40
+        },
         "downloadTimeout": {
             "title": "Download timeout in ms",
             "type": "integer",
@@ -149,6 +167,11 @@
             "title": "Convert webp to png",
             "type": "boolean",
             "description": "If checked, the actor will automatically convert all webp type images to standard png. This increases the size of the image."
+        },
+        "stateFields": {
+            "title": "State fields",
+            "type": "array",
+            "description": "You can specify fields that you want in your state to make it more readable and use less memory. By default it uses all."
         },
         "blankRun": {
             "title": "Blank run",
