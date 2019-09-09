@@ -1,5 +1,5 @@
 {
-    "title": "Spreadsheet import input",
+    "title": "Images download-upload input",
     "type": "object",
     "schemaVersion": 1,
     "required": ["inputId"],
@@ -102,8 +102,7 @@
             "title": "Upload to",
             "type": "string",
             "description": "Where do you want to upload the image files",
-            "enum": ["key-value-store", "s3", "no-upload"],
-            "sectionCaption": "Upload settings"
+            "enum": ["key-value-store", "s3", "no-upload"]
         },
         "uploadStoreName": {
             "title": "Key-value store name",
@@ -111,7 +110,6 @@
             "description": "Key-value store name where the images will be upload. Empty field means it will be uploaded to the default key-value store",
             "editor": "textfield"
         },
-
         "s3Bucket":{
             "title": "S3 Bucket",
             "type": "string",
