@@ -155,7 +155,7 @@ module.exports = async ({ data, iterationInput, iterationIndex, stats, originalI
 
         if (typeof state[url].imageUploaded === 'boolean') return; // means it was already download before
         const item = data[state[url].itemIndex];
-        const key = fileNameFunction({ url, md5, state, item, iterationIndex });
+        const key = fileNameFunction({ url, md5, state, item, iterationIndex, input: originalInput });
         // If filename is not a string, we don't continue. This can be used to prevent the download at this point
         if (typeof key !== 'string') {
             state[url].imageUploaded = false;
@@ -235,7 +235,7 @@ module.exports = async ({ data, iterationInput, iterationIndex, stats, originalI
     if ((outputTo && outputTo !== 'no-output')) {
         console.log('Will save output data to:', outputTo);
         let processedData = postDownloadFunction
-            ? await postDownloadFunction({ data, state, fileNameFunction, md5, iterationIndex })
+            ? await postDownloadFunction({ data, state, fileNameFunction, md5, iterationIndex, input: originalInput })
             : data;
         console.log('Post-download processed data length:', processedData.length);
 
