@@ -102,8 +102,7 @@
             "title": "Upload to",
             "type": "string",
             "description": "Where do you want to upload the image files",
-            "enum": ["key-value-store", "s3", "no-upload"],
-            "sectionCaption": "Upload settings"
+            "enum": ["key-value-store", "s3", "no-upload"]
         },
         "uploadStoreName": {
             "title": "Key-value store name",
