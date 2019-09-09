@@ -160,6 +160,7 @@ module.exports = async ({ data, iterationInput, iterationIndex, stats, originalI
         if (typeof key !== 'string') {
             state[url].imageUploaded = false;
             state[url].errors = [{ when: 'before-download', error: 'fileNameFunction didn\'t provide a string' }];
+            state[url] = filterStateFields(state[url], stateFields);
             stats.inc(props.imagesNoFilename, true);
             return;
         }
