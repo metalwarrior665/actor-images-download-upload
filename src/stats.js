@@ -8,7 +8,7 @@ module.exports.Stats = class Stats {
             this.imagesUploaded = 0;
             this.imagesFailed = 0;
             this.imagesDuplicates = 0;
-            // this.imagesDownloadedPreviously = 0;
+            this.imagesNoFilename = 0;
             this.imagesNotString = 0;
             this.itemsWithoutImages = 0;
             this.timeSpentDownloading = 0;
@@ -79,7 +79,7 @@ module.exports.Stats = class Stats {
             imagesUploaded: 'imagesUploaded',
             imagesFailed: 'imagesFailed',
             imagesDuplicates: 'imagesDuplicates',
-            // imagesDownloadedPreviously: 'imagesDownloadedPreviously',
+            imagesNoFilename: 'imagesNoFilename',
             itemsWithoutImages: 'itemsWithoutImages',
             imagesNotString: 'imagesNotString',
             timeSpentDownloading: 'timeSpentDownloading',

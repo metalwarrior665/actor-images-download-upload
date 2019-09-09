@@ -1,7 +1,6 @@
 const Apify = require('apify');
 const rp = require('request-fixed-tunnel-agent');
 
-const { PROXY_URL } = require('./constants.js');
 const { checkIfImage, convertWebpToPng } = require('./image-check.js');
 
 const deduplicateErrors = (errors) => {

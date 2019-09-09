@@ -156,6 +156,13 @@ module.exports = async ({ data, iterationInput, iterationIndex, stats, originalI
         if (typeof state[url].imageUploaded === 'boolean') return; // means it was already download before
         const item = data[state[url].itemIndex];
         const key = fileNameFunction({ url, md5, state, item, iterationIndex });
+        // If filename is not a string, we don't continue. This can be used to prevent the download at this point
+        if (typeof key !== 'string') {
+            state[url].imageUploaded = false;
+            state[url].errors = [{ when: 'before-download', error: 'fileNameFunction didn\'t provide a string' }];
+            stats.inc(props.imagesNoFilename, true);
+            return;
+        }
         if (s3CheckIfAlreadyThere && uploadTo === 's3') {
             const { isThere, errors } = await checkIfAlreadyOnS3(key, downloadUploadOptions.uploadOptions);
             if (isThere) {
