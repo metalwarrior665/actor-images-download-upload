@@ -86,7 +86,7 @@ const download = async (url, imageCheck, key, downloadOptions) => {
 
     while (!imageDownloaded && errors.length <= maxRetries) {
         const startDownloading = Date.now();
-        if (errors.length > 0) {
+        if (proxyUrl) {
             response = await sendRequest(proxyOptions);
         } else {
             response = await sendRequest(normalOptions);
