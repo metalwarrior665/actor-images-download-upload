@@ -196,6 +196,8 @@ module.exports = async ({ data, iterationInput, iterationIndex, stats, originalI
         requestList,
         handleRequestFunction,
         autoscaledPoolOptions: {
+            desiredConcurrencyRatio: 0.4,
+            scaleUpStepRatio: 0.5,
             snapshotterOptions: {
                 maxBlockedMillis: 100,
             },
