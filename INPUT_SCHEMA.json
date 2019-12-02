@@ -2,20 +2,13 @@
     "title": "Images upload input",
     "type": "object",
     "schemaVersion": 1,
-    "required": ["inputId"],
+    "required": [],
     "properties": {
-        "inputId": {
-            "title": "Input Id",
+        "datasetId": {
+            "title": "Dataset Id",
             "type": "string",
-            "description": "Id of dataset, crawler execution or key value store where the data are located. Image URLs will be extracted from there.",
+            "description": "Id of the dataset where the data are located. Image URLs will be extracted from there.",
             "editor": "textfield"
-        },
-        "outputTo": {
-            "title": "Output to",
-            "type": "string",
-            "description": "Where to save the output with enhanced data.",
-            "enum": ["no-output", "key-value-store", "dataset"],
-            "prefill": "no-output"
         },
         "pathToImageUrls": {
             "title": "Path to image URLs",
@@ -31,13 +24,77 @@
             "editor": "javascript",
             "prefill": "(url, md5) => md5(url)"
         },
+        "limit": {
+            "title": "Limit",
+            "type": "integer",
+            "description": "Max items to load from the dataset. Use with `offset` to paginate over the data (can reduce memory requirement of large loads).",
+            "minimum": 0,
+            "sectionCaption": "Input/Output options",
+            "sectionDescription": "More options for input data and where output data will be saved. Output data are transformed input data, not images. For them use upload options"
+        },
+        "offset": {
+            "title": "Offset",
+            "type": "integer",
+            "description": "How many items to skip from the dataset. Use with `limit` to paginate over the data (can reduce memory requirement of large loads)",
+            "minimum": 0
+        },
+        "outputTo": {
+            "title": "Output to",
+            "type": "string",
+            "description": "Where to save the data from input after possibly transforming them during the download process.",
+            "enum": ["no-output", "key-value-store", "dataset"],
+            "prefill": "no-output"
+        },
+        "storeInput": {
+            "title": "Key Value store input",
+            "type": "string",
+            "description": "If you want to input the data from key-value store instead of dataset. Notation: `storeId-recordKey`, e.g. - `kWdGzuXuKfYkrntWw-OUTPUT`",
+            "editor": "textfield"
+        },
+        "uploadTo": {
+            "title": "Upload to",
+            "type": "string",
+            "description": "Where do you want to upload the image files",
+            "enum": ["key-value-store", "s3", "no-upload"],
+            "sectionCaption": "Image upload options"
+        },
+        "uploadStoreName": {
+            "title": "Key-value store name",
+            "type": "string",
+            "description": "Key-value store name where the images will be upload. Empty field means it will be uploaded to the default key-value store",
+            "editor": "textfield"
+        },
+        "s3Bucket":{
+            "title": "S3 Bucket",
+            "type": "string",
+            "description": "Only relevant if you want to upload to S3! Name of the bucket where to upload.",
+            "editor": "textfield"
+        },
+        "s3AccessKeyId":{
+            "title": "S3 Access key id",
+            "type": "string",
+            "description": "Only relevant if you want to upload to S3! You can create these credentials for IAM user.",
+            "editor": "textfield"
+        },
+        "s3SecretAccessKey":{
+            "title": "S3 Secret access key",
+            "type": "string",
+            "description": "Only relevant if you want to upload to S3! You can create these credentials for IAM user.",
+            "editor": "textfield"
+        },
+        "s3CheckIfAlreadyThere": {
+            "title": "Check if key is already on S3",
+            "type": "boolean",
+            "description": "This option is useful if you don't want to rewrite the same image. GET requests are also cheaper than PUT requests"
+        },
         "preDownloadFunction": {
             "title": "Pre-download function",
             "type": "string",
             "description": "Function that specifies how will be the data transformed before downloading the image. The input and output of the function is the whole data array. You can skip downloading images of any item if you add skipItem: true field to it.",
             "editor": "javascript",
             "prefill": "/* Example: We get rid of the items with price 0\n(inputData) => inputData.filter((item) => item.price > 0)\n*/",
-            "sectionCaption": "Transforming functions"
+            "sectionCaption": "Transforming functions",
+            "sectionDescription": "You can use these functions to transform your data before and/or after the image download process."
         },
         "postDownloadFunction": {
             "title": "Post-download function",
@@ -45,25 +102,6 @@
             "description": "Function that specifies how will be the data transformed before downloading the image. The input and output of the function is the whole data array. By default it adds either the file URL or errors array depending if the download was successfull.",
             "editor": "javascript",
             "prefill": "/* Example: We remove items without any successfully uploaded images.\n We also remove any image URLs that were not uploaded\n \n (data, imagesObject, fileNameFunction, md5) => {\n    return data.reduce((newData, item) => {\n        const downloadedImages = item.images.filter((imageUrl) => {\n            return imagesObject[imageUrl] && imagesObject[imageUrl].imageUploaded;\n        });\n        \n        if (downloadedImages.length === 0) {\n            return newData;\n        }\n        \n        return newData.concat({ ...item, images: downloadedImages });\n    }, []);\n}\n*/"
-        },
-        "inputRecordKey": {
-            "title": "Input record Key",
-            "type": "string",
-            "description": "Only specify if input id points to a key value store! This is the record key under which the data are.",
-            "editor": "textfield",
-            "sectionCaption": "Input options"
-        },
-        "limit": {
-            "title": "Limit",
-            "type": "integer",
-            "description": "Max items to load from the dataset. Use with `offset` to paginate over the data (can reduce memory requirement of large loads).",
-            "minimum": 0
-        },
-        "offset": {
-            "title": "Offset",
-            "type": "integer",
-            "description": "How many items to skip from the dataset. Use with `limit` to paginate over the data (can reduce memory requirement of large loads)",
-            "minimum": 0
         },
         "imageCheckMaxRetries":{
             "title": "Max retries",
@@ -98,50 +136,15 @@
             "description": "Minimim height of the image in pixels to pass the image check. Works only if the image check type is 'jimp'.",
             "minimum": 1
         },
-        "uploadTo": {
-            "title": "Upload to",
-            "type": "string",
-            "description": "Where do you want to upload the image files",
-            "enum": ["key-value-store", "s3", "no-upload"]
-        },
-        "uploadStoreName": {
-            "title": "Key-value store name",
-            "type": "string",
-            "description": "Key-value store name where the images will be upload. Empty field means it will be uploaded to the default key-value store",
-            "editor": "textfield"
-        },
-        "s3Bucket":{
-            "title": "S3 Bucket",
-            "type": "string",
-            "description": "Only relevant if you want to upload to S3! Name of the bucket where to upload.",
-            "editor": "textfield"
-        },
-        "s3AccessKeyId":{
-            "title": "S3 Access key id",
-            "type": "string",
-            "description": "Only relevant if you want to upload to S3! You can create these credentials for IAM user.",
-            "editor": "textfield"
-        },
-        "s3SecretAccessKey":{
-            "title": "S3 Secret access key",
-            "type": "string",
-            "description": "Only relevant if you want to upload to S3! You can create these credentials for IAM user.",
-            "editor": "textfield"
-        },
-        "s3CheckIfAlreadyThere": {
-            "title": "Check if key is already on S3",
-            "type": "boolean",
-            "description": "This option is useful if you don't want to rewrite the same image. GET requests are also cheaper than PUT requests"
-        },
         "proxyConfiguration": {
             "title": "Proxy configuration",
             "type": "object",
-            "description": "Select proxies to be used. First request is always tried without proxy because images are rarely blocked.",
+            "description": "Select proxies to be used.",
             "prefill": { "useApifyProxy": true },
             "editor": "proxy",
             "sectionCaption": "Miscellaneous options"
         },
-        "concurrency":{
+        "maxConcurrency":{
             "title": "Max concurrency",
             "type": "integer",
             "description": "You can specify how many maximum parallel downloading/uploading requests will be running. Keep in mind that the limit is here to not overload the host server.",
@@ -172,8 +175,8 @@
             "editor": "json",
             "description": "You can specify fields that you want in your state to make it more readable and use less memory. By default it uses all."
         },
-        "blankRun": {
-            "title": "Blank run",
+        "noDownloadRun": {
+            "title": "Run without download",
             "type": "boolean",
             "description": "If checked, the actor will not download and upload the images. Usefull for checking duplicates or transformations."
         }

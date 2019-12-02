@@ -1,5 +1,6 @@
 const Apify = require('apify');
 const rp = require('request-fixed-tunnel-agent');
+// const httpRequest = require('@apify/http-request');
 
 const { checkIfImage, convertWebpToPng } = require('./image-check.js');
 
@@ -64,6 +65,16 @@ const download = async (url, imageCheck, key, downloadOptions) => {
         ...normalOptions,
         proxy: proxyUrl,
     };
+    // Implement once httpRequest gets fixed
+    /*
+    const httpReqOptions = {
+        ignoreSslErrors: true,
+        url,
+        proxyUrl,
+        throwHttpErrors: true,
+        encoding: null,
+    }
+    */
     const errors = [];
     let imageDownloaded = false;
     let response;
@@ -77,6 +88,7 @@ const download = async (url, imageCheck, key, downloadOptions) => {
     const sendRequest = async (options) => {
         return Promise.race([
             rp(options),
+            // httpRequest(httpReqOptions),
             new Promise((resolve, reject) => setTimeout(() => reject(new Error('Timeouted')), downloadTimeout)),
         ]).catch(handleError);
     };

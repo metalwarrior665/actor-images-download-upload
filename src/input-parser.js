@@ -5,40 +5,42 @@ const { DEFAULT_BATCH_SIZE, DEFAULT_REQUEST_EXTERNAL_TIMEOUT } = require('./cons
 const { setS3 } = require('./utils.js');
 
 module.exports.constantsFromInput = async (input) => {
+    // Small hack to automatically load from webhook (no need for payload template)
+    const datasetId = input.datasetId || input.resource.defaultDatasetId;
+
     const {
         // main
-        inputId,
-        outputTo,
         pathToImageUrls = '',
         fileNameFunction = defaultFileNameFunction,
-        // Transforming functions
-        preDownloadFunction,
-        postDownloadFunction,
-        // Input options
-        recordKey,
+        // Input/ouput options
         limit,
         offset,
-        // Image check
-        imageCheckType = 'content-type',
-        imageCheckMinSize,
-        imageCheckMinWidth,
-        imageCheckMinHeight,
-        imageCheckMaxRetries = 1,
-        // Upload
+        outputTo,
+        storeInput,
+        // Image upload options
         uploadTo,
         uploadStoreName,
         s3Bucket,
         s3AccessKeyId,
         s3SecretAccessKey,
         s3CheckIfAlreadyThere,
+        // Transforming functions
+        preDownloadFunction,
+        postDownloadFunction,
+        // Image check
+        imageCheckType = 'content-type',
+        imageCheckMinSize,
+        imageCheckMinWidth,
+        imageCheckMinHeight,
+        imageCheckMaxRetries = 1,
         // Misc
         proxyConfiguration,
-        concurrency,
+        maxConcurrency,
         stateFields,
         downloadTimeout = DEFAULT_REQUEST_EXTERNAL_TIMEOUT,
         batchSize = DEFAULT_BATCH_SIZE,
         convertWebpToPng,
-        blankRun = false,
+        noDownloadRun = false,
     } = input;
 
     const imageCheck = {
@@ -63,11 +65,11 @@ module.exports.constantsFromInput = async (input) => {
 
     const finalInput = {
         mainInput: {
-            inputId,
-            batchSize,
-            recordKey,
+            datasetId,
             limit,
             offset,
+            storeInput,
+            batchSize,
         },
         iterationInput: {
             uploadTo,
@@ -76,28 +78,43 @@ module.exports.constantsFromInput = async (input) => {
             fileNameFunction,
             preDownloadFunction,
             postDownloadFunction,
-            concurrency,
+            maxConcurrency,
             s3CheckIfAlreadyThere,
             convertWebpToPng,
             batchSize,
             imageCheck,
             downloadUploadOptions,
             stateFields,
-            blankRun,
+            noDownloadRun,
         },
     };
     return finalInput;
 };
 
 module.exports.checkInput = (input) => {
+    // Small hack to automatically load from webhook (no need for payload template)
+    const datasetId = input.datasetId || input.resource.defaultDatasetId;
+
     if (!input.uploadTo) throw new Error('INPUT.uploadTo has to be specified!');
 
     if (input.uploadTo === 's3' && (!input.s3Bucket || !input.s3AccessKeyId || !input.s3SecretAccessKey)) {
         throw new Error('If you want to upload to S3, you have to provide all of s3Bucket, s3AccessKeyId and s3SecretAccessKey in input!');
     }
 
-    if (!input.inputId) {
-        throw new Error('There is no input id to get image URLs from!');
+    if (!datasetId && !input.storeInput) {
+        throw new Error('"datasetId or storeInput missing from the input!!!"');
+    }
+
+    if (datasetId && datasetId.length !== 17) {
+        throw new Error('datasetId has to be a string with 17 characters! Check if you copied it correctly.')
+    }
+
+    // Should have format storeId-recordKey
+    if (input.storeInput) {
+        const split = input.storeInput.split('-');
+        if (split.length < 2 || split[0].length !== 17) {
+            throw new Error('storeInput has wrong format! It should be storeId and recordKey joined with a hyphen!')
+        }
     }
 
     if (typeof input.fileNameFunction === 'string') {

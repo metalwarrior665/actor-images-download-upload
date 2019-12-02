@@ -26,12 +26,12 @@ module.exports = async ({ data, iterationInput, iterationIndex, stats, originalI
         fileNameFunction,
         preDownloadFunction,
         postDownloadFunction,
-        concurrency,
+        maxConcurrency,
         s3CheckIfAlreadyThere,
         imageCheck,
         downloadUploadOptions,
         stateFields,
-        blankRun,
+        noDownloadRun,
     } = iterationInput;
     console.log('loading state...');
 
@@ -63,7 +63,7 @@ module.exports = async ({ data, iterationInput, iterationIndex, stats, originalI
 
     const updateStats = !iterationState[iterationIndex].started;
     if (data.length === 0) {
-        throw new Error('We loaded no data from the specified inputId, aborting the run!');
+        throw new Error('We loaded no data from the specified input, aborting the run!');
     }
 
     if (data.length === 0) throw new Error("Didn't load any items from kv store or dataset");
@@ -89,6 +89,7 @@ module.exports = async ({ data, iterationInput, iterationIndex, stats, originalI
 
     // add images to state
     try {
+        let imageIndex = 0;
         data.forEach((item, itemIndex) => {
             if (item.skipDownload) return; // we skip item with this field
             let imagesFromPath = objectPath.get(item, pathToImageUrls);
@@ -109,10 +110,15 @@ module.exports = async ({ data, iterationInput, iterationIndex, stats, originalI
                     stats.inc(props.imagesNotString, updateStats);
                     return;
                 }
-                if (state[image] === undefined) { // undefined means they were not yet added
+                // undefined means they were not yet added
+                // false means they were not yet downloaded / uploaded or the process failed
+                if (state[image] === undefined) {
+
                     state[image] = {
+                        imageIndex,
                         itemIndex,
-                    }; // false means they were not yet downloaded / uploaded or the process failed
+                    };
+                    imageIndex++;
                 } else if (typeof state[image] === 'object' && state[image].fromState) {
                     // stats.inc(props.imagesDownloadedPreviously, updateStats);
                 } else {
@@ -175,7 +181,7 @@ module.exports = async ({ data, iterationInput, iterationIndex, stats, originalI
             }
         }
         // We provide an option for a dummy run to check duplicates etc.
-        const info = blankRun
+        const info = noDownloadRun
             ? { imageUploaded: true, time: { downloading: 0, processing: 0, uploading: 0 }}
             : await downloadUpload(url, key, downloadUploadOptions, imageCheck);
         stats.add(props.timeSpentDownloading, info.time.downloading, true);
@@ -205,7 +211,7 @@ module.exports = async ({ data, iterationInput, iterationIndex, stats, originalI
                 maxEventLoopOverloadedRatio: 0.9,
             },
         },
-        maxConcurrency: concurrency,
+        maxConcurrency,
         handleFailedRequestFunction: async ({ request, error }) => {
             const { url } = request;
             stats.inc(props.imagesFailed, true);

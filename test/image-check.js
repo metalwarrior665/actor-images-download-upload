@@ -43,3 +43,5 @@ Apify.main(async () => {
     await sizeOfFn(buffer);
     console.log(`sizeOfStart took: ${Date.now() - sizeOfStart} ms`);
 });
+
+
