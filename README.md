@@ -267,7 +267,7 @@ After download/upload the state has much richer information that you can use in 
 Very often you want to run an image download/upload update after every run of your scraping/automation actor. [Webhooks](https://apify.com/docs/webhooks) are solution for this. The default `datasetId` will be passed automatically to the this actor's run so you don't need to set it up in the payload template (internally the actor transforms the `resource.defaultDatasetId` from the webhook into just `datasetId` for its own input).
 
 The webhook from your scraping/automation run can either call the `Images Downalod & Upload` actor directly or as a task. If you call the **actor directly**, you have to fill up the payload template with appropriate input and add this as a URL:
-`https://api.apify.com/v2/acts/lukaskrivka~google-spreadsheet/runs?token=<YOUR_API_TOKEN>`
+`https://api.apify.com/v2/acts/lukaskrivka~images-download-upload/runs?token=<YOUR_API_TOKEN>`
 Be aware that this is dangerous because if you don't specify exact version, yout integration will break after actor's author will update it. Use tasks for webhooks instead!
 
 I strongly recommend to rather **create a task** with predefined input that will not change in every run - the only changing part is usually `datasetId`. You will not need to fill up the payload template and your webhook URL will then look like:
