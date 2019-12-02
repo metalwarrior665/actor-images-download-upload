@@ -237,27 +237,28 @@ The state is an object which keys are image URLs. It's values depend on if the i
 After download/upload the state has much richer information that you can use in `postDownloadFunction` to determine what to do next.
 
 ```
-"https://i.ebayimg.com/images/g/FDgAAOSwJd1b5NKF/s-l1600.jpg": {
-    "imageIndex": 0,
-    "itemIndex": 0,
-    "duplicateIndexes": [
-      43,
-      46,
-      49
-    ],
-    "imageUploaded": true,
-    "errors": [],
-    "retryCount": 0,
-    "contentType": "image/jpeg",
-    "sizes": {
-      "sizeInKB": 346
+{
+    "https://i.ebayimg.com/images/g/FDgAAOSwJd1b5NKF/s-l1600.jpg": {
+        "imageIndex": 0,
+        "itemIndex": 0,
+        "duplicateIndexes": [
+            43,
+            46,
+            49
+        ],
+        "imageUploaded": true,
+        "errors": [],
+        "retryCount": 0,
+        "contentType": "image/jpeg",
+        "sizes": {
+            "sizeInKB": 346
+        },
+        "time": {
+            "downloading": 1959,
+            "processing": 0,
+            "uploading": 9
+        }
     },
-    "time": {
-      "downloading": 1959,
-      "processing": 0,
-      "uploading": 9
-    }
-  },
   ...
 }
 ```
