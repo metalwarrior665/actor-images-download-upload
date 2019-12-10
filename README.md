@@ -81,7 +81,7 @@ Data provided should be an array (which is always the case for datasets) and the
 
 Data can be just a plain array of image URLs. In this case you don't need to fill `pathToImageUrls` at all.
 
-```
+```json
 [
     "https://n.nordstrommedia.com/id/cf6c6151-4380-44aa-ad73-85e4b2140383.jpeg",
     "https://n.nordstrommedia.com/id/6c03833f-c5f1-43d8-9d20-fb29834c7798.jpeg"
@@ -90,7 +90,7 @@ Data can be just a plain array of image URLs. In this case you don't need to fil
 
 If you scrape some e-commerce website, you will usually have items that have the images inside. In this example `pathToImageUrls` would be `images`.
 
-```
+```json
 [{
 
   "title": "wide sleeved blouse",
@@ -117,7 +117,7 @@ If you scrape some e-commerce website, you will usually have items that have the
 
 Image URLs can be also deeply nested. In this case it is also just single URL instead of an array. `pathToImageUrls` will be `images.0.src`
 
-```
+```json
 [{
   "retailer": "walmart",
   "url": "https://www.walmart.com/ip/Pull-On-Treggings/462482210",
@@ -148,15 +148,24 @@ It receives an object as argument with these properties which you can (but not n
 - `input`: <[object](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object)> Original input of the actor
 
 By default `fileNameFunction` simply produces a hash of the image URL:
-```({ url, md5 }) => md5(url)```
+
+```javascript
+({ url, md5 }) => md5(url)
+```
 So your image file would be named something like `78e731027d8fd50ed642340b7c9a63b3`.
 
 **Example use-cases**:
 *Create folder on S3 and simply add index numbers as filenames*
-```({ url, md5, state }) => `images/${state[url].imageIndex}` ```
+
+```javascript
+({ url, md5, state }) => `images/${state[url].imageIndex}`
+```
 
 *More complicated filename that depends on other atributes of the item*
-```({ item }) => `${item.retailer}_${item.retailerProductId}_${item.color}.jpg` ```
+
+```javascript
+({ item }) => `${item.retailer}_${item.retailerProductId}_${item.color}.jpg`
+```
 
 ### preDownloadFunction
 `preDownloadFunction` is useful when you need to process the data before downloading them. You can get rid of items that are corrupted or not interesting.
@@ -171,7 +180,8 @@ If you add `skipDownload: true` property to any item, its images won't be downlo
 
 **Example use-cases**:
 *Do not download images of items that are not new*
-```
+
+```javascript
 ({ data }) => data.map((item) => {
     if (item.status !== 'NEW) {
         item.skipDownload = true;
@@ -193,7 +203,8 @@ It receives an object as argument with these properties which you can (but not n
 
 **Example use-cases**:
 *Remove all image URLs that were not properly downloaded/uploaded. If the item has no downloaded/uploaded image, remove it completely. The download can be hard blocked by the website (even after multiple retries) but it can also fail the test you can configure, e.g. the image is too small*
-```
+
+```javascript
  ({ data, state, fileNameFunction, md5 }) => {
     // we map over all the items
     return data.reduce((newData, item) => {
@@ -217,7 +228,8 @@ It receives an object as argument with these properties which you can (but not n
 The actor processes the input data in batches to lower memory needs. The default batch size is 10000 items. Each batch has its own data and state and the data are fully processed before the next batch starts to get processed.
 
 The state is an object which keys are image URLs. It's values depend on if the image URLs was processed or not. Initially the images are loaded just with indexes like this:
-```
+
+```json
 {
   "https://images-na.ssl-images-amazon.com/images/I/716chGzGflL._UL1500_.jpg": {
     "itemIndex": 328,
@@ -236,7 +248,7 @@ The state is an object which keys are image URLs. It's values depend on if the i
 
 After download/upload the state has much richer information that you can use in `postDownloadFunction` to determine what to do next.
 
-```
+```json
 {
     "https://i.ebayimg.com/images/g/FDgAAOSwJd1b5NKF/s-l1600.jpg": {
         "imageIndex": 0,
