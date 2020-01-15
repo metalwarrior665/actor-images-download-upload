@@ -171,7 +171,7 @@ So your image file would be named something like `78e731027d8fd50ed642340b7c9a63
 `preDownloadFunction` is useful when you need to process the data before downloading them. You can get rid of items that are corrupted or not interesting.
 
 It receives an object as argument with these properties which you can (but not need to) use:
-- `data`: <[array](https://developer.mozilla.org/cs/docs/Web/JavaScript/Reference/Global_Objects/Array)> Initial data loaded from dataset or key value store you provided.
+- `data`: <[array](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array)> Initial data loaded from dataset or key value store you provided.
 - `iterationIndex`: <[number](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#Number_type)> Index of the current iteration(batch). Look at [internals](#internals) for more info. Starts at 0.
 - `input`: <[object](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object)> Original input of the actor
 
