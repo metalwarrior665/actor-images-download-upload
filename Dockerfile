@@ -1,7 +1,6 @@
 # FROM apify/actor-node-chrome
 FROM apify/actor-node
 
-RUN apk add python3
 # Copy all files and directories from the directory to the Docker image
 COPY . ./
 
@@ -9,7 +8,7 @@ COPY . ./
 # avoid logging to much and show log the dependency tree
 
 RUN npm install --quiet --only=prod --no-optional \
- && npm list
+ && npm list --only=prod --no-optional
 
 # Define that start command
 CMD [ "npm", "start" ]
