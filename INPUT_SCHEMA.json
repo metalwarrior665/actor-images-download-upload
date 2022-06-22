@@ -22,7 +22,7 @@
             "type": "string",
             "description": "Function that specifies how will be image filename created from its URL. If you keep this empty, it will be md5 hash of the URL.",
             "editor": "javascript",
-            "prefill": "(url, md5) => md5(url)"
+            "prefill": "({url, md5}) => md5(url)"
         },
         "limit": {
             "title": "Limit",
