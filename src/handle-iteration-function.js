@@ -137,8 +137,7 @@ module.exports = async ({ data, iterationInput, iterationIndex, stats, originalI
         throw new Error('Adding images to state failed with error:', e);
     }
 
-    const requestList = new Apify.RequestList({ sources: Object.keys(state).map((url) => ({ url })) });
-    await requestList.initialize();
+    const requestList = await Apify.openRequestList("main", Object.keys(state).map((url) => ({ url })));
 
     iterationState[iterationIndex].started = true;
     await Apify.setValue('STATE-ITERATION', iterationState);
