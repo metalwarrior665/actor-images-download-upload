@@ -1,6 +1,5 @@
 const Apify = require('apify');
 const rp = require('request-fixed-tunnel-agent');
-// const httpRequest = require('@apify/http-request');
 
 const { checkIfImage, convertWebpToPng } = require('./image-check.js');
 
@@ -14,16 +13,16 @@ const deduplicateErrors = (errors) => {
     }, []);
 };
 
-const upload = async (key, buffer, uploadOptions) => {
+const upload = async (key, buffer, uploadOptions, contentType) => {
     const errors = [];
     if (uploadOptions.uploadTo === 'key-value-store') {
         if (uploadOptions.storeHandle) {
-            await uploadOptions.storeHandle.setValue(key, buffer, { contentType: 'image/jpeg' })
+            await uploadOptions.storeHandle.setValue(key, buffer, { contentType })
                 .catch((e) => {
                     errors.push(e.message);
                 });
         } else {
-            await Apify.setValue(key, buffer, { contentType: 'image/jpeg' })
+            await Apify.setValue(key, buffer, { contentType })
                 .catch((e) => {
                     errors.push(e.message);
                 });
@@ -53,7 +52,7 @@ const download = async (url, imageCheck, key, downloadOptions) => {
     const { downloadTimeout, maxRetries, proxyConfiguration } = downloadOptions;
 
     const proxyUrl = proxyConfiguration && proxyConfiguration.useApifyProxy
-        ? Apify.getApifyProxyUrl({ groups: proxyConfiguration.apifyProxyGroups })
+        ? (await Apify.createProxyConfiguration(proxyConfiguration)).newUrl()
         : null;
     const normalOptions = {
         strictSSL: false,
@@ -65,16 +64,7 @@ const download = async (url, imageCheck, key, downloadOptions) => {
         ...normalOptions,
         proxy: proxyUrl,
     };
-    // Implement once httpRequest gets fixed
-    /*
-    const httpReqOptions = {
-        ignoreSslErrors: true,
-        url,
-        proxyUrl,
-        throwHttpErrors: true,
-        encoding: null,
-    }
-    */
+
     const errors = [];
     let imageDownloaded = false;
     let response;
@@ -181,7 +171,7 @@ module.exports.downloadUpload = async (url, key, downloadUploadOptions, imageChe
 
     if (imageDownloaded) {
         const startUploading = Date.now();
-        const uploadResult = await upload(key, response.body, uploadOptions);
+        const uploadResult = await upload(key, response.body, uploadOptions, contentType);
         time.uploading += (Date.now() - startUploading);
 
         ({ imageUploaded } = uploadResult);

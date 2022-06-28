@@ -16,11 +16,10 @@
   "author": "Lukas Krivka",
   "license": "ISC",
   "dependencies": {
-    "@apify/http-request": "^1.1.1",
     "@types/file-type": "^5.2.2",
     "@types/image-size": "0.0.29",
     "@types/jimp": "^0.2.28",
-    "apify": "^0.14.15",
+    "apify": "^2.3.2",
     "aws-sdk": "^2.363.0",
     "file-type": "^10.6.0",
     "image-size": "^0.6.3",

@@ -28,8 +28,8 @@ const loadItems = async ({ datasetId, from, to }, offset = 0, items = []) => {
         return items;
     }
 
-    const newItems = await Apify.client.datasets.getItems({
-        datasetId,
+    const dataset = await Apify.openDataset(datasetId);
+    const newItems = await dataset.getData({
         offset: from,
         limit,
     }).then((res) => res.items);

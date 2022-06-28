@@ -40,7 +40,8 @@ Apify.main(async () => {
     // LOADING FROM ANYWHERE
     if (datasetId) {
         console.log(`Loading from dataset: ${datasetId}`);
-        const { itemCount } = await Apify.client.datasets.getDataset({ datasetId });
+        const dataset = await Apify.openDataset(datasetId);
+        const { itemCount } = await dataset.getInfo();
         stats.set(props.itemsTotal, itemCount, true);
         await loadAndProcessItems({
             datasetId,
@@ -60,13 +61,17 @@ Apify.main(async () => {
         }
         const [ , storeId, recordKey ] = match;
         console.log(`Loading from kvStore - storeId: ${storeId}, recordKey: ${recordKey}`);
-        const keyValueStore = await Apify.client.keyValueStores.getRecord({
-            key: recordKey, storeId,
-        }).catch(() => console.log('Key value store or record inside him not found, we cannot continue'));
-        if (keyValueStore && Array.isArray(keyValueStore.body)) {
-            console.log('We got items from kv, count:', keyValueStore.body.length);
-            stats.set(props.itemsTotal, keyValueStore.body.length, true);
-            await handleIterationFunction({ data: keyValueStore.body, iterationInput, iterationIndex: 0, stats, originalInput: input });
+        let KVStoreValue;
+        try {
+            const KVStore = await Apify.openKeyValueStore(storeId);
+            KVStoreValue = await KVStore.getValue(recordKey);
+        } catch {
+            throw new Error('Key value store or record inside it not found, we cannot continue');
+        }
+        if (KVStoreValue && Array.isArray(KVStoreValue)) {
+            console.log('We got items from kv, count:', KVStoreValue.length);
+            stats.set(props.itemsTotal, KVStoreValue.length, true);
+            await handleIterationFunction({ data: KVStoreValue, iterationInput, iterationIndex: 0, stats, originalInput: input });
         } else {
             console.log('We cannot load data from kv store because they are not in a proper format');
         }
