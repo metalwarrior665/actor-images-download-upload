@@ -3,7 +3,7 @@ const Apify = require('apify');
 const { Stats } = require('./stats');
 const { loadAndProcessItems, hideTokenFromInput } = require('./utils');
 const { checkInput, constantsFromInput } = require('./input-parser');
-const handleIterationFunction = require('./handle-iteration-function.js');
+const handleIterationFunction = require('./handle-iteration-function');
 
 Apify.main(async () => {
     let input = await Apify.getValue('INPUT');
@@ -59,7 +59,7 @@ Apify.main(async () => {
         if (!match) {
             throw new Error(`Cannot match storeInput ${storeInput}, probably it has wrong format?`);
         }
-        const [ , storeId, recordKey ] = match;
+        const [, storeId, recordKey] = match;
         console.log(`Loading from kvStore - storeId: ${storeId}, recordKey: ${recordKey}`);
         let KVStoreValue;
         try {

@@ -8,7 +8,7 @@ const md5 = require('md5');
 // const heapdump = require('heapdump');
 
 const { downloadUpload } = require('./download-upload');
-const { checkIfAlreadyOnS3 } = require('./utils.js');
+const { checkIfAlreadyOnS3 } = require('./utils');
 
 module.exports = async ({ data, iterationInput, iterationIndex, stats, originalInput }) => {
     const props = stats.getProps();
@@ -113,7 +113,6 @@ module.exports = async ({ data, iterationInput, iterationIndex, stats, originalI
                 // undefined means they were not yet added
                 // false means they were not yet downloaded / uploaded or the process failed
                 if (state[image] === undefined) {
-
                     state[image] = {
                         imageIndex,
                         itemIndex,
@@ -137,7 +136,7 @@ module.exports = async ({ data, iterationInput, iterationIndex, stats, originalI
         throw new Error('Adding images to state failed with error:', e);
     }
 
-    const requestList = await Apify.openRequestList("main", Object.keys(state).map((url) => ({ url })));
+    const requestList = await Apify.openRequestList('main', Object.keys(state).map((url) => ({ url })));
 
     iterationState[iterationIndex].started = true;
     await Apify.setValue('STATE-ITERATION', iterationState);
@@ -147,13 +146,13 @@ module.exports = async ({ data, iterationInput, iterationIndex, stats, originalI
             return stateObject;
         }
         const newObject = {
-            imageUploaded: stateObject.imageUploaded
+            imageUploaded: stateObject.imageUploaded,
         };
         fields.forEach((field) => {
             newObject[field] = stateObject[field];
-        })
+        });
         return newObject;
-    }
+    };
 
     const handleRequestFunction = async ({ request }) => {
         const { url } = request;
@@ -181,7 +180,7 @@ module.exports = async ({ data, iterationInput, iterationIndex, stats, originalI
         }
         // We provide an option for a dummy run to check duplicates etc.
         const info = noDownloadRun
-            ? { imageUploaded: true, time: { downloading: 0, processing: 0, uploading: 0 }}
+            ? { imageUploaded: true, time: { downloading: 0, processing: 0, uploading: 0 } }
             : await downloadUpload(url, key, downloadUploadOptions, imageCheck);
         stats.add(props.timeSpentDownloading, info.time.downloading, true);
         stats.add(props.timeSpentProcessing, info.time.processing, true);

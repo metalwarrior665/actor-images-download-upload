@@ -1,7 +1,7 @@
 const Apify = require('apify');
 const rp = require('request-fixed-tunnel-agent');
 
-const { checkIfImage, convertWebpToPng } = require('./image-check.js');
+const { checkIfImage, convertWebpToPng } = require('./image-check');
 
 const deduplicateErrors = (errors) => {
     return errors.reduce((newErrors, error) => {
@@ -94,7 +94,7 @@ const download = async (url, imageCheck, key, downloadOptions) => {
             response = await sendRequest(normalOptions);
         }
         timeDownloading += Date.now() - startDownloading;
-        if (!response) continue; // eslint-disable-line
+        if (!response) continue;
 
         const startProcessing = Date.now();
         const { isImage, error, retry, contentType, sizes } = await checkIfImage(response, imageCheck);

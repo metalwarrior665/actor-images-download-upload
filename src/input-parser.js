@@ -1,8 +1,8 @@
 const Apify = require('apify');
 
 const { defaultFileNameFunction } = require('./default-functions');
-const { DEFAULT_BATCH_SIZE, DEFAULT_REQUEST_EXTERNAL_TIMEOUT } = require('./constants.js');
-const { setS3 } = require('./utils.js');
+const { DEFAULT_BATCH_SIZE, DEFAULT_REQUEST_EXTERNAL_TIMEOUT } = require('./constants');
+const { setS3 } = require('./utils');
 
 module.exports.constantsFromInput = async (input) => {
     // Small hack to automatically load from webhook (no need for payload template)
@@ -106,14 +106,14 @@ module.exports.checkInput = (input) => {
     }
 
     if (datasetId && datasetId.length !== 17) {
-        throw new Error('datasetId has to be a string with 17 characters! Check if you copied it correctly.')
+        throw new Error('datasetId has to be a string with 17 characters! Check if you copied it correctly.');
     }
 
     // Should have format storeId-recordKey
     if (input.storeInput) {
         const split = input.storeInput.split('-');
         if (split.length < 2 || split[0].length !== 17) {
-            throw new Error('storeInput has wrong format! It should be storeId and recordKey joined with a hyphen!')
+            throw new Error('storeInput has wrong format! It should be storeId and recordKey joined with a hyphen!');
         }
     }
 
