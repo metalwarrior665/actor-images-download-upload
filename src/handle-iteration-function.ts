@@ -1,22 +1,22 @@
-const Apify = require('apify');
-
-const objectPath = require('object-path');
-const md5 = require('md5');
+import { Actor } from 'apify';
+import { BasicCrawler, RequestList } from 'crawlee';
+import objectPath from 'object-path';
+import md5 from 'md5';
 
 // const path = require('path');
 // const fs = require('fs');
 // const heapdump = require('heapdump');
 
-const { downloadUpload } = require('./download-upload');
-const { checkIfAlreadyOnS3 } = require('./utils');
+import { downloadUpload } from './download-upload.js';
+import { checkIfAlreadyOnS3 } from './utils.js';
 
-module.exports = async ({ data, iterationInput, iterationIndex, stats, originalInput }) => {
+export default async ({ data, iterationInput, iterationIndex, stats, originalInput }: any) => {
     const props = stats.getProps();
 
-    // periodially displaying stats
+    // periodically displaying stats
     const statsInterval = setInterval(async () => {
         stats.display();
-        await Apify.setValue('stats-state', stats.return());
+        await Actor.setValue('stats-state', stats.return());
     }, 10 * 1000);
 
     const {
@@ -35,9 +35,9 @@ module.exports = async ({ data, iterationInput, iterationIndex, stats, originalI
     } = iterationInput;
     console.log('loading state...');
 
-    const state = (await Apify.getValue(`STATE-IMAGES-${iterationIndex}`)) || {};
+    const state: any = (await Actor.getValue(`STATE-IMAGES-${iterationIndex}`)) || {};
 
-    const iterationState = await Apify.getValue('STATE-ITERATION');
+    const iterationState: any = await Actor.getValue('STATE-ITERATION');
     if (!iterationState[iterationIndex]) {
         iterationState[iterationIndex] = {
             index: iterationIndex,
@@ -48,16 +48,16 @@ module.exports = async ({ data, iterationInput, iterationIndex, stats, originalI
     }
 
     console.log('images loaded from state:');
-    console.log(`Uploaded: ${Object.values(state).filter((val) => val.imageUploaded).length}`);
-    console.log(`Failed: ${Object.values(state).filter((val) => val.imageUploaded === false).length}`);
-    console.log(`Not yet handled: ${Object.values(state).filter((val) => val.imageUploaded === undefined).length}`);
+    console.log(`Uploaded: ${Object.values(state).filter((val: any) => val.imageUploaded).length}`);
+    console.log(`Failed: ${Object.values(state).filter((val: any) => val.imageUploaded === false).length}`);
+    console.log(`Not yet handled: ${Object.values(state).filter((val: any) => val.imageUploaded === undefined).length}`);
 
     // SAVING STATE
     const stateInterval = setInterval(async () => {
-        await Apify.setValue(`STATE-IMAGES-${iterationIndex}`, state);
+        await Actor.setValue(`STATE-IMAGES-${iterationIndex}`, state);
     }, 10 * 1000);
 
-    Object.keys(state).forEach((key) => {
+    Object.keys(state).forEach((key: any) => {
         state[key].fromState = true;
     });
 
@@ -84,13 +84,13 @@ module.exports = async ({ data, iterationInput, iterationIndex, stats, originalI
         }
     }
 
-    const itemsSkippedCount = data.filter((item) => !!item.skipDownload).length;
+    const itemsSkippedCount = data.filter((item: any) => !!item.skipDownload).length;
     stats.add(props.itemsSkipped, itemsSkippedCount, updateStats);
 
     // add images to state
     try {
         let imageIndex = 0;
-        data.forEach((item, itemIndex) => {
+        data.forEach((item: any, itemIndex: number) => {
             if (item.skipDownload) return; // we skip item with this field
             let imagesFromPath = objectPath.get(item, pathToImageUrls);
             if (!Array.isArray(imagesFromPath) && typeof imagesFromPath !== 'string') {
@@ -104,7 +104,7 @@ module.exports = async ({ data, iterationInput, iterationIndex, stats, originalI
                 stats.inc(props.itemsWithoutImages, updateStats);
                 return;
             }
-            imagesFromPath.forEach((image) => {
+            imagesFromPath.forEach((image: any) => {
                 stats.inc(props.imagesTotal, updateStats);
                 if (typeof image !== 'string') {
                     stats.inc(props.imagesNotString, updateStats);
@@ -133,28 +133,28 @@ module.exports = async ({ data, iterationInput, iterationIndex, stats, originalI
         });
     } catch (e) {
         console.dir(e);
-        throw new Error('Adding images to state failed with error:', e);
+        throw new Error(`Adding images to state failed with error: ${(e as Error).message}`);
     }
 
-    const requestList = await Apify.openRequestList('main', Object.keys(state).map((url) => ({ url })));
+    const requestList = await RequestList.open('main', Object.keys(state).map((url) => ({ url })));
 
     iterationState[iterationIndex].started = true;
-    await Apify.setValue('STATE-ITERATION', iterationState);
+    await Actor.setValue('STATE-ITERATION', iterationState);
 
-    const filterStateFields = (stateObject, fields) => {
+    const filterStateFields = (stateObject: any, fields: any) => {
         if (!fields) {
             return stateObject;
         }
-        const newObject = {
+        const newObject: any = {
             imageUploaded: stateObject.imageUploaded,
         };
-        fields.forEach((field) => {
+        fields.forEach((field: any) => {
             newObject[field] = stateObject[field];
         });
         return newObject;
     };
 
-    const handleRequestFunction = async ({ request }) => {
+    const requestHandler = async ({ request }: any) => {
         const { url } = request;
 
         if (typeof state[url].imageUploaded === 'boolean') return; // means it was already download before
@@ -196,9 +196,9 @@ module.exports = async ({ data, iterationInput, iterationIndex, stats, originalI
         }
     };
 
-    const crawler = new Apify.BasicCrawler({
+    const crawler = new BasicCrawler({
         requestList,
-        handleRequestFunction,
+        requestHandler,
         autoscaledPoolOptions: {
             desiredConcurrencyRatio: 0.4,
             scaleUpStepRatio: 0.5,
@@ -210,7 +210,7 @@ module.exports = async ({ data, iterationInput, iterationIndex, stats, originalI
             },
         },
         maxConcurrency,
-        handleFailedRequestFunction: async ({ request, error }) => {
+        handleFailedRequestFunction: async ({ request }, error) => {
             const { url } = request;
             stats.inc(props.imagesFailed, true);
             stats.addFailed({ url, errors: [`Handle function failed! ${error.toString()}`] });
@@ -233,7 +233,7 @@ module.exports = async ({ data, iterationInput, iterationIndex, stats, originalI
         });
 
         const dumpBuff = fs.readFileSync(dumpPath);
-        await Apify.setValue(dumpName, dumpBuff, { contentType: 'application/octet-stream' });
+        await Actor.setValue(dumpName, dumpBuff, { contentType: 'application/octet-stream' });
     }
     */
 
@@ -246,8 +246,8 @@ module.exports = async ({ data, iterationInput, iterationIndex, stats, originalI
         console.log('Post-download processed data length:', processedData.length);
 
         if (outputTo === 'key-value-store') {
-            const alreadySavedData = (await Apify.getValue('OUTPUT')) || [];
-            await Apify.setValue('OUTPUT', alreadySavedData.concat(processedData));
+            const alreadySavedData: any[] = (await Actor.getValue('OUTPUT')) || [];
+            await Actor.setValue('OUTPUT', alreadySavedData.concat(processedData));
         }
 
         // Have to save state of dataset push because it takes too long
@@ -259,8 +259,8 @@ module.exports = async ({ data, iterationInput, iterationIndex, stats, originalI
                 console.log(`pushing data ${index}:${index + chunkSize}`);
                 iterationState[iterationIndex].pushed = index + chunkSize;
                 await Promise.all([
-                    Apify.pushData(processedData.slice(index, index + chunkSize)),
-                    Apify.setValue('STATE-ITERATION', iterationState),
+                    Actor.pushData(processedData.slice(index, index + chunkSize)),
+                    Actor.setValue('STATE-ITERATION', iterationState),
                 ]);
             }
         }
@@ -276,8 +276,8 @@ module.exports = async ({ data, iterationInput, iterationIndex, stats, originalI
         finished: false,
         pushed: 0,
     };
-    await Apify.setValue('STATE-ITERATION', iterationState);
-    await Apify.setValue(`STATE-IMAGES-${iterationIndex}`, state);
+    await Actor.setValue('STATE-ITERATION', iterationState);
+    await Actor.setValue(`STATE-IMAGES-${iterationIndex}`, state);
     console.log('END OF ITERATION STATS:');
     stats.display();
 };

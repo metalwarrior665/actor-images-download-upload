@@ -1,12 +1,12 @@
-const AWS = require('aws-sdk');
-const Apify = require('apify');
+import { Actor } from 'apify';
+import AWS from 'aws-sdk';
 
-module.exports.hideTokenFromInput = (input) => {
+export const hideTokenFromInput = (input: any) => {
     const newInput = { ...input, s3AccessKeyId: '******', s3SecretAccessKey: '******' };
     return newInput;
 };
 
-module.exports.setS3 = (credentials) => {
+export const setS3 = (credentials: any) => {
     const awsS3Params = {
         params: {
             Bucket: credentials.s3Bucket,
@@ -20,7 +20,7 @@ module.exports.setS3 = (credentials) => {
 };
 
 // Simple recursive load from dataset
-const loadItems = async ({ datasetId, from, to }, offset = 0, items = []) => {
+const loadItems = async ({ datasetId, from, to }: any, offset = 0, items = []): Promise<any> => {
     const maxLoad = 250000;
     const itemCountToLoad = to - (from + offset);
     const limit = Math.min(itemCountToLoad, maxLoad);
@@ -28,8 +28,8 @@ const loadItems = async ({ datasetId, from, to }, offset = 0, items = []) => {
         return items;
     }
 
-    const dataset = await Apify.openDataset(datasetId);
-    const newItems = await dataset.getData({
+    const dataset = await Actor.openDataset(datasetId);
+    const newItems: any = await dataset.getData({
         offset: from,
         limit,
     }).then((res) => res.items);
@@ -42,7 +42,7 @@ const loadItems = async ({ datasetId, from, to }, offset = 0, items = []) => {
     return loadItems({ datasetId, from, to }, offset + maxLoad, items);
 };
 
-const loadAndProcessItems = async ({
+export const loadAndProcessItems = async ({
     datasetId,
     handleIterationFunction,
     batchSize,
@@ -52,7 +52,7 @@ const loadAndProcessItems = async ({
     originalInput,
     limit,
     offset = 0,
-}) => {
+}: any) => {
     const end = limit ? offset + limit : null;
     // The outer loop is for each batch (where you have access to the whole state of the batch)
     while (true) {
@@ -70,9 +70,7 @@ const loadAndProcessItems = async ({
     }
 };
 
-module.exports.loadAndProcessItems = loadAndProcessItems;
-
-const checkIfAlreadyOnS3 = async (key, uploadOptionsPassed) => {
+export const checkIfAlreadyOnS3 = async (key: any, uploadOptionsPassed: any) => {
     try {
         const data = await uploadOptionsPassed.s3Client.headObject({
             Key: key,
@@ -82,8 +80,6 @@ const checkIfAlreadyOnS3 = async (key, uploadOptionsPassed) => {
         }
         return { isThere: false, errors: [] };
     } catch (e) {
-        return { isThere: false, errors: [e.message] };
+        return { isThere: false, errors: [(e as Error).message] };
     }
 };
-
-module.exports.checkIfAlreadyOnS3 = checkIfAlreadyOnS3;

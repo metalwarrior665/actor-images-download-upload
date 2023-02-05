@@ -1,10 +1,10 @@
-const Apify = require('apify');
+import { Actor } from 'apify';
 
-const { defaultFileNameFunction } = require('./default-functions');
-const { DEFAULT_BATCH_SIZE, DEFAULT_REQUEST_EXTERNAL_TIMEOUT } = require('./constants');
-const { setS3 } = require('./utils');
+import { defaultFileNameFunction } from './default-functions.js';
+import { DEFAULT_BATCH_SIZE, DEFAULT_REQUEST_EXTERNAL_TIMEOUT } from './constants.js';
+import { setS3 } from './utils.js';
 
-module.exports.constantsFromInput = async (input) => {
+export const constantsFromInput = async (input: any) => {
     // Small hack to automatically load from webhook (no need for payload template)
     const datasetId = input.datasetId || input.resource.defaultDatasetId;
 
@@ -12,7 +12,7 @@ module.exports.constantsFromInput = async (input) => {
         // main
         pathToImageUrls = '',
         fileNameFunction = defaultFileNameFunction,
-        // Input/ouput options
+        // Input/output options
         limit,
         offset,
         outputTo,
@@ -54,7 +54,7 @@ module.exports.constantsFromInput = async (input) => {
     const uploadOptions = {
         uploadTo,
         s3Client: uploadTo === 's3' ? setS3(s3Credentials) : null,
-        storeHandle: uploadStoreName ? await Apify.openKeyValueStore(uploadStoreName) : null,
+        storeHandle: uploadStoreName ? await Actor.openKeyValueStore(uploadStoreName) : null,
     };
     const downloadOptions = {
         downloadTimeout,
@@ -91,7 +91,7 @@ module.exports.constantsFromInput = async (input) => {
     return finalInput;
 };
 
-module.exports.checkInput = (input) => {
+export const checkInput = (input: any) => {
     // Small hack to automatically load from webhook (no need for payload template)
     const datasetId = input.datasetId || input.resource.defaultDatasetId;
 
@@ -121,7 +121,7 @@ module.exports.checkInput = (input) => {
         try {
             input.fileNameFunction = eval(input.fileNameFunction); // eslint-disable-line
         } catch (e) {
-            throw new Error('fileName function cannot be evaluated as a function. Error:', e.message);
+            throw new Error(`fileName function cannot be evaluated as a function. Error: ${(e as Error).message}`);
         }
     }
 
@@ -129,7 +129,7 @@ module.exports.checkInput = (input) => {
         try {
             input.preDownloadFunction = eval(input.preDownloadFunction); // eslint-disable-line
         } catch (e) {
-            throw new Error('preDownloadFunction function cannot be evaluated as a function. Error:', e.message);
+            throw new Error(`preDownloadFunction function cannot be evaluated as a function. Error: ${(e as Error).message}`);
         }
     }
 
@@ -137,7 +137,7 @@ module.exports.checkInput = (input) => {
         try {
             input.postDownloadFunction = eval(input.postDownloadFunction); // eslint-disable-line
         } catch (e) {
-            throw new Error('postDownloadFunction function cannot be evaluated as a function. Error:', e.message);
+            throw new Error(`postDownloadFunction function cannot be evaluated as a function. Error: ${(e as Error).message}`);
         }
     }
 

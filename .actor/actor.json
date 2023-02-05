@@ -1,6 +1,6 @@
 {
+	"actorSpecification": 1,
 	"name": "Images-download-upload",
 	"version": "0.1",
-	"buildTag": "latest",
-	"env": null
+	"buildTag": "latest"
 }
