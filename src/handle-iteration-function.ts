@@ -3,9 +3,9 @@ import { BasicCrawler, RequestList } from 'crawlee';
 import objectPath from 'object-path';
 import md5 from 'md5';
 
-// const path = require('path');
-// const fs = require('fs');
-// const heapdump = require('heapdump');
+// import path from 'path';
+// import fs from 'fs';
+// import heapdump from 'heapdump';
 
 import { downloadUpload } from './download-upload.js';
 import { checkIfAlreadyOnS3 } from './utils.js';

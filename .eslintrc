@@ -1,8 +1,12 @@
 {
-    "parser": "@typescript-eslint/parser",
-    "extends": ["@apify", "plugin:@typescript-eslint/recommended", "prettier"],
-    "plugins": ["@typescript-eslint"],
+    "extends": [
+        "@apify/ts",
+        "plugin:@typescript-eslint/recommended-requiring-type-checking",
+        "plugin:@typescript-eslint/strict",
+        "prettier"
+    ],
     "rules": {
-        "import/extensions": "off"
+        "@typescript-eslint/consistent-type-definitions": ["error", "type"],
+        "no-console": "off"
     }
 }
