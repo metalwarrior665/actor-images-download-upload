@@ -1,6 +1,6 @@
 import { Actor } from 'apify';
 import Jimp from "jimp";
-import { fileTypeFromFile, FileTypeResult } from 'file-type';
+import { fileTypeFromBuffer, FileTypeResult } from 'file-type';
 import sizeOf from 'image-size';
 import rp from 'request-fixed-tunnel-agent';
 
@@ -14,7 +14,7 @@ const jimpFn = async (buffer) => {
 };
 
 const filetypeFn = async (buffer) => {
-    const { mime } = await fileTypeFromFile(buffer) as FileTypeResult;
+    const { mime } = await fileTypeFromBuffer(buffer) as FileTypeResult;
     return mime;
 };
 

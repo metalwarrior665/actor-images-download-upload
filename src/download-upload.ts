@@ -1,7 +1,9 @@
 import { Actor } from 'apify';
-import rp from 'request-fixed-tunnel-agent';
+import needle from 'needle';
+import { HttpsProxyAgent } from 'hpagent';
 
 import { checkIfImage, convertWebpToPng } from './image-check.js';
+import { ImageCheck } from './types.js';
 
 const deduplicateErrors = (errors: any) => {
     return errors.reduce((newErrors: any, error: any) => {
@@ -48,36 +50,32 @@ const upload = async (key: string, buffer: any, uploadOptions: any, contentType:
     };
 };
 
-const download = async (url: string, imageCheck: any, key: string, downloadOptions: any) => {
+const download = async (url: string, imageCheck: ImageCheck, key: string, downloadOptions: any) => {
     const { downloadTimeout, maxRetries, proxyConfiguration } = downloadOptions;
 
     const proxyUrl = proxyConfiguration && proxyConfiguration.useApifyProxy
-        ? (await Actor.createProxyConfiguration(proxyConfiguration))!.newUrl()
+        ? await (await Actor.createProxyConfiguration(proxyConfiguration))!.newUrl()
         : null;
-    const normalOptions = {
-        strictSSL: false,
-        url,
-        encoding: null,
-        resolveWithFullResponse: true,
-    };
-    const proxyOptions = {
-        ...normalOptions,
-        proxy: proxyUrl,
-    };
 
     const errors: string[] = [];
     let imageDownloaded = false;
-    let response;
+    let response: any;
     let contentTypeMain;
     let sizesMain;
 
     const handleError = (e: Error) => {
+        console.log(`Error in downloading`, e);
         errors.push(e.toString());
     };
 
-    const sendRequest = async (options: any) => {
+    const sendRequest = async () => {
         return Promise.race([
-            rp(options),
+            needle('get', url, {
+                agent: proxyUrl ? new HttpsProxyAgent({
+                    proxy: proxyUrl!
+                }) : null,
+                setEncoding: null
+            }).catch(handleError),
             // httpRequest(httpReqOptions),
             new Promise((_, reject) => setTimeout(() => reject(new Error('Timeouted')), downloadTimeout)),
         ]).catch(handleError);
@@ -88,11 +86,7 @@ const download = async (url: string, imageCheck: any, key: string, downloadOptio
 
     while (!imageDownloaded && errors.length <= maxRetries) {
         const startDownloading = Date.now();
-        if (proxyUrl) {
-            response = await sendRequest(proxyOptions);
-        } else {
-            response = await sendRequest(normalOptions);
-        }
+        response = await sendRequest();
         timeDownloading += Date.now() - startDownloading;
         if (!response) continue;
 
@@ -137,7 +131,7 @@ const download = async (url: string, imageCheck: any, key: string, downloadOptio
     };
 };
 
-export const downloadUpload = async (url: string, key: string, downloadUploadOptions: any, imageCheck: any) => {
+export const downloadUpload = async (url: string, key: string, downloadUploadOptions: any, imageCheck: ImageCheck) => {
     const { downloadOptions, uploadOptions } = downloadUploadOptions;
     const errors: any[] = [];
     const time = {

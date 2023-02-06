@@ -1,5 +1,5 @@
 import imageSize from 'image-size';
-import { fileTypeFromFile, FileTypeResult } from 'file-type';
+import { fileTypeFromBuffer, FileTypeResult } from 'file-type';
 import { dwebp } from 'webp-converter';
 import fs from 'fs';
 import { promisify } from 'util';
@@ -64,7 +64,7 @@ export const checkIfImage = async (response: any, imageCheck: any) => {
         const buffer = response.body;
 
         if (imageCheck.type === 'content-type' || imageCheck.type === 'image-size') {
-            const { mime } = await fileTypeFromFile(buffer) as FileTypeResult;
+            const { mime } = await fileTypeFromBuffer(buffer) as FileTypeResult;
             result.contentType = mime;
             if (!mime.includes('image/')) {
                 result.error = `Content type is not an image. Instead: ${mime}`;

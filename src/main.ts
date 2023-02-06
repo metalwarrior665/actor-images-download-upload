@@ -41,7 +41,7 @@ const { index: iterationIndex } = Object.values(iterationState).find((stateObj: 
 // LOADING FROM ANYWHERE
 if (datasetId) {
     console.log(`Loading from dataset: ${datasetId}`);
-    const dataset = await Actor.openDataset(datasetId);
+    const dataset = await Actor.openDataset(datasetId, { forceCloud: true });
     const { itemCount } = await dataset.getInfo() as { itemCount: number };
     stats.set(props.itemsTotal, itemCount, true);
     await loadAndProcessItems({

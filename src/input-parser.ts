@@ -3,6 +3,7 @@ import { Actor } from 'apify';
 import { defaultFileNameFunction } from './default-functions.js';
 import { DEFAULT_BATCH_SIZE, DEFAULT_REQUEST_EXTERNAL_TIMEOUT } from './constants.js';
 import { setS3 } from './utils.js';
+import { ImageCheck } from './types.js';
 
 export const constantsFromInput = async (input: any) => {
     // Small hack to automatically load from webhook (no need for payload template)
@@ -32,7 +33,7 @@ export const constantsFromInput = async (input: any) => {
         imageCheckMinSize,
         imageCheckMinWidth,
         imageCheckMinHeight,
-        imageCheckMaxRetries = 1,
+        imageCheckMaxRetries = 6,
         // Misc
         proxyConfiguration,
         maxConcurrency,
@@ -43,7 +44,7 @@ export const constantsFromInput = async (input: any) => {
         noDownloadRun = false,
     } = input;
 
-    const imageCheck = {
+    const imageCheck: ImageCheck = {
         type: imageCheckType,
         minSize: imageCheckMinSize,
         minWidth: imageCheckMinWidth,

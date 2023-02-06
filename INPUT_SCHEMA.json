@@ -107,8 +107,8 @@
             "title": "Max retries",
             "type": "integer",
             "description": "How many times should actor retry if the file it tries to download fails to pass the tests. Setting this too high can lead to unecessary loops.",
-            "minimum": 0,
-            "default": 1,
+            "minimum": 1,
+            "default": 6,
             "sectionCaption": "Image quality check options"
         },
         "imageCheckType": {
@@ -154,8 +154,8 @@
             "title": "Download timeout in ms",
             "type": "integer",
             "description": "How long we will wait to download each image",
-            "minimum": 100,
-            "default": 7000
+            "minimum": 1000,
+            "default": 15000
         },
         "batchSize": {
             "title": "Batch Size",

@@ -1,7 +1,7 @@
 import { Actor } from 'apify';
-import { BasicCrawler, RequestList } from 'crawlee';
+import { BasicCrawler, BasicCrawlingContext, RequestList } from 'crawlee';
 import objectPath from 'object-path';
-import md5 from 'md5';
+import md5 from 'crypto-js/md5';
 
 // import path from 'path';
 // import fs from 'fs';
@@ -47,7 +47,7 @@ export default async ({ data, iterationInput, iterationIndex, stats, originalInp
         };
     }
 
-    console.log('images loaded from state:');
+    console.log('Images loaded from state:');
     console.log(`Uploaded: ${Object.values(state).filter((val: any) => val.imageUploaded).length}`);
     console.log(`Failed: ${Object.values(state).filter((val: any) => val.imageUploaded === false).length}`);
     console.log(`Not yet handled: ${Object.values(state).filter((val: any) => val.imageUploaded === undefined).length}`);
@@ -71,7 +71,7 @@ export default async ({ data, iterationInput, iterationIndex, stats, originalInp
     console.log(`We got ${data.length} items in iteration index: ${iterationIndex}`);
     console.log('STARTING DOWNLOAD');
 
-    // filtering items
+    // Filtering items
     if (preDownloadFunction) {
         try {
             console.log('Transforming items with pre download function');
@@ -87,7 +87,7 @@ export default async ({ data, iterationInput, iterationIndex, stats, originalInp
     const itemsSkippedCount = data.filter((item: any) => !!item.skipDownload).length;
     stats.add(props.itemsSkipped, itemsSkippedCount, updateStats);
 
-    // add images to state
+    // Add images to state
     try {
         let imageIndex = 0;
         data.forEach((item: any, itemIndex: number) => {
@@ -154,45 +154,47 @@ export default async ({ data, iterationInput, iterationIndex, stats, originalInp
         return newObject;
     };
 
-    const requestHandler = async ({ request }: any) => {
-        const { url } = request;
+    const requestHandler = async ({ request }: BasicCrawlingContext) => {
+        const { url, label } = request;
 
-        if (typeof state[url].imageUploaded === 'boolean') return; // means it was already download before
-        const item = data[state[url].itemIndex];
-        const key = fileNameFunction({ url, md5, state, item, iterationIndex, input: originalInput });
-        // If filename is not a string, we don't continue. This can be used to prevent the download at this point
-        if (typeof key !== 'string') {
-            state[url].imageUploaded = false;
-            state[url].errors = [{ when: 'before-download', error: 'fileNameFunction didn\'t provide a string' }];
-            state[url] = filterStateFields(state[url], stateFields);
-            stats.inc(props.imagesNoFilename, true);
-            return;
-        }
-        if (s3CheckIfAlreadyThere && uploadTo === 's3') {
-            const { isThere, errors } = await checkIfAlreadyOnS3(key, downloadUploadOptions.uploadOptions);
-            if (isThere) {
-                state[url].imageUploaded = true; // not really uploaded but we need to add this status
-                state[url].errors = errors;
+        if (!label) {
+            if (typeof state[url].imageUploaded === 'boolean') return; // means it was already download before
+            const item = data[state[url].itemIndex];
+            const key = fileNameFunction({ url, md5, state, item, iterationIndex, input: originalInput });
+            // If filename is not a string, we don't continue. This can be used to prevent the download at this point
+            if (typeof key !== 'string') {
+                state[url].imageUploaded = false;
+                state[url].errors = [{ when: 'before-download', error: 'fileNameFunction didn\'t provide a string' }];
                 state[url] = filterStateFields(state[url], stateFields);
-                stats.inc(props.imagesAlreadyOnS3, true);
+                stats.inc(props.imagesNoFilename, true);
                 return;
             }
-        }
-        // We provide an option for a dummy run to check duplicates etc.
-        const info = noDownloadRun
-            ? { imageUploaded: true, time: { downloading: 0, processing: 0, uploading: 0 } }
-            : await downloadUpload(url, key, downloadUploadOptions, imageCheck);
-        stats.add(props.timeSpentDownloading, info.time.downloading, true);
-        stats.add(props.timeSpentProcessing, info.time.processing, true);
-        stats.add(props.timeSpentUploading, info.time.uploading, true);
+            if (s3CheckIfAlreadyThere && uploadTo === 's3') {
+                const { isThere, errors } = await checkIfAlreadyOnS3(key, downloadUploadOptions.uploadOptions);
+                if (isThere) {
+                    state[url].imageUploaded = true; // not really uploaded but we need to add this status
+                    state[url].errors = errors;
+                    state[url] = filterStateFields(state[url], stateFields);
+                    stats.inc(props.imagesAlreadyOnS3, true);
+                    return;
+                }
+            }
+            // We provide an option for a dummy run to check duplicates etc.
+            const info = noDownloadRun
+                ? { imageUploaded: true, time: { downloading: 0, processing: 0, uploading: 0 } }
+                : await downloadUpload(url, key, downloadUploadOptions, imageCheck);
+            stats.add(props.timeSpentDownloading, info.time.downloading, true);
+            stats.add(props.timeSpentProcessing, info.time.processing, true);
+            stats.add(props.timeSpentUploading, info.time.uploading, true);
 
-        state[url] = { ...state[url], ...info };
-        state[url] = filterStateFields(state[url], stateFields);
-        if (info.imageUploaded) {
-            stats.inc(props.imagesUploaded, true);
-        } else {
-            stats.inc(props.imagesFailed, true);
-            stats.addFailed({ url, errors: info.errors });
+            state[url] = { ...state[url], ...info };
+            state[url] = filterStateFields(state[url], stateFields);
+            if (info.imageUploaded) {
+                stats.inc(props.imagesUploaded, true);
+            } else {
+                stats.inc(props.imagesFailed, true);
+                stats.addFailed({ url, errors: info.errors });
+            }
         }
     };
 
@@ -210,12 +212,12 @@ export default async ({ data, iterationInput, iterationIndex, stats, originalInp
             },
         },
         maxConcurrency,
-        handleFailedRequestFunction: async ({ request }, error) => {
+        failedRequestHandler: async ({ request }: BasicCrawlingContext, error: Error) => {
             const { url } = request;
             stats.inc(props.imagesFailed, true);
             stats.addFailed({ url, errors: [`Handle function failed! ${error.toString()}`] });
         },
-        handleRequestTimeoutSecs: 180,
+        requestHandlerTimeoutSecs: 180,
     });
 
     await crawler.run();
