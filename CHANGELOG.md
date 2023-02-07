@@ -1,3 +1,9 @@
+# 2023-02-07
+
+- Rewrite to crawlee, and overall updates.
+- Added a new option `zip-file` for `uploadTo` dropdown to upload a zip file of all the images to the dataset.
+- Fixed issue with downloading images.
+
 #### Version-2 - 2019-12-02
 - Input has been completely redesigned. Please read it again and adjust.
 - Removed integration for cancelled Apify Crawler product.

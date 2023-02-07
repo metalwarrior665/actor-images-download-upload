@@ -98,10 +98,13 @@ export class Stats {
     }
 
     display() {
-        const statsObject: any = this.return();
+        const statsObject = this.return();
         delete statsObject.failedInfo;
+        const { imagesTotal, imagesUploaded, imagesFailed, itemsSkipped, imagesDuplicates } = statsObject;
+
         log.info('*** STATS ***');
-        log.info(JSON.stringify(statsObject, null, 2));
+        log.info(`Total: ${imagesTotal}, Uploaded: ${imagesUploaded}, Failed: ${imagesFailed}, Skipped: ${itemsSkipped}, Duplicates: ${imagesDuplicates}`);
+        log.debug(JSON.stringify(statsObject, null, 2));
     }
 
     getProps() {
@@ -120,6 +123,6 @@ export class Stats {
             timeSpentProcessing: 'timeSpentProcessing',
             timeSpentUploading: 'timeSpentUploading',
             failedInfo: 'failedInfo',
-        } as { [key in keyof StatsState]: key};
+        } as { [key in keyof StatsState]: key };
     }
 };

@@ -1,4 +1,4 @@
-import { Actor } from 'apify';
+import { Actor, log } from 'apify';
 import AWS from 'aws-sdk';
 
 export const hideTokenFromInput = (input: any) => {
@@ -33,7 +33,7 @@ const loadItems = async ({ datasetId, from, to }: any, offset = 0, items = []): 
         offset: from,
         limit,
     }).then((res) => res.items);
-    console.log(`LOADED DATA --- From: ${from}, Limit: ${limit}`);
+    log.info(`LOADED DATA --- From: ${from}, Limit: ${limit}`);
 
     items = items.concat(newItems);
     if (newItems.length < limit) {
@@ -60,12 +60,17 @@ export const loadAndProcessItems = async ({
         const to = start + batchSize;
         const limitedTo = end && end < to ? end : null;
         const items = await loadItems({ datasetId, from: start, to: limitedTo || to });
-        console.log(`ITERATION START --- Iteration: ${iterationIndex}, Loaded count: ${items.length}`);
+        console.log(`ITERATION START --- Iteration: ${iterationIndex}, Loaded Count: ${items.length}`);
         // There is no more data to load, we download the rest of the images and finish
         if (items.length === 0) {
             return;
         }
         await handleIterationFunction({ data: items, iterationInput, iterationIndex, stats, originalInput });
+
+        if (items.length < batchSize) {
+            return;
+        }
+
         iterationIndex++;
     }
 };

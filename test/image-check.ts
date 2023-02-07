@@ -1,4 +1,4 @@
-import { Actor } from 'apify';
+import { Actor, log } from 'apify';
 import Jimp from "jimp";
 import { fileTypeFromBuffer, FileTypeResult } from 'file-type';
 import sizeOf from 'image-size';
@@ -28,18 +28,18 @@ const buffer = await rp({
     encoding: null,
 });
 
-console.log('buffer length', buffer.length);
+log.info('buffer length', buffer.length);
 
 const jimpStart = Date.now();
-console.log(await jimpFn(buffer));
-console.log(`Jimp took: ${Date.now() - jimpStart} ms`);
+log.info(`${await jimpFn(buffer) || false}`);
+log.info(`Jimp took: ${Date.now() - jimpStart} ms`);
 
 const filetypeStart = Date.now();
-console.log(await filetypeFn(buffer));
-console.log(`fileType took: ${Date.now() - filetypeStart} ms`);
+log.info(await filetypeFn(buffer));
+log.info(`fileType took: ${Date.now() - filetypeStart} ms`);
 
 const sizeOfStart = Date.now();
 await sizeOfFn(buffer);
-console.log(`sizeOfStart took: ${Date.now() - sizeOfStart} ms`);
+log.info(`sizeOfStart took: ${Date.now() - sizeOfStart} ms`);
 
 await Actor.exit();

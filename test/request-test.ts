@@ -1,4 +1,4 @@
-import { Actor } from 'apify';
+import { Actor, log } from 'apify';
 import rp from 'request-fixed-tunnel-agent';
 
 await Actor.init();
@@ -8,6 +8,6 @@ const response = await rp({
     resolveWithFullResponse: true,
 });
 await Actor.setValue('res', response.body, { contentType: 'text/html' });
-console.log(typeof response.statusCode);
+log.info(typeof response.statusCode);
 
 await Actor.exit();

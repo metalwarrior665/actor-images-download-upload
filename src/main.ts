@@ -1,4 +1,4 @@
-import { Actor } from 'apify';
+import { Actor, log } from 'apify';
 
 import { Stats, StatsState } from './stats.js';
 import { loadAndProcessItems, hideTokenFromInput } from './utils.js';
@@ -8,7 +8,7 @@ import handleIterationFunction from './handle-iteration-function.js';
 await Actor.init();
 
 let input = await Actor.getValue('INPUT');
-console.log('INPUT');
+log.info('INPUT');
 console.dir(hideTokenFromInput(input));
 
 input = checkInput(input);
@@ -40,7 +40,7 @@ const { index: iterationIndex } = Object.values(iterationState).find((stateObj: 
 
 // LOADING FROM ANYWHERE
 if (datasetId) {
-    console.log(`Loading from dataset: ${datasetId}`);
+    log.info(`Loading from dataset: ${datasetId}`);
     const dataset = await Actor.openDataset(datasetId, { forceCloud: true });
     const { itemCount } = await dataset.getInfo() as { itemCount: number };
     stats.set(props.itemsTotal, itemCount, true);
@@ -61,7 +61,7 @@ if (datasetId) {
         throw new Error(`Cannot match storeInput ${storeInput}, probably it has wrong format?`);
     }
     const [, storeId, recordKey] = match;
-    console.log(`Loading from kvStore - storeId: ${storeId}, recordKey: ${recordKey}`);
+    log.info(`Loading from kvStore - storeId: ${storeId}, recordKey: ${recordKey}`);
     let KVStoreValue;
     try {
         const KVStore = await Actor.openKeyValueStore(storeId);
@@ -70,11 +70,11 @@ if (datasetId) {
         throw new Error('Key value store or record inside it not found, we cannot continue');
     }
     if (KVStoreValue && Array.isArray(KVStoreValue)) {
-        console.log('We got items from kv, count:', KVStoreValue.length);
+        log.info(`We got items from kv, count: ${KVStoreValue.length}`);
         stats.set(props.itemsTotal, KVStoreValue.length, true);
         await handleIterationFunction({ data: KVStoreValue, iterationInput, iterationIndex: 0, stats, originalInput: input });
     } else {
-        console.log('We cannot load data from kv store because they are not in a proper format');
+        log.warning('We cannot load data from kv store because they are not in a proper format');
     }
 }
 
@@ -95,9 +95,9 @@ try {
     await Actor.setValue('stats-state', stats.return());
     await Actor.setValue('stats', statsObject);
 } catch (e) {
-    console.log(`Saving stats failed with error: ${(e as Error).message}`);
+    log.error(`Saving stats failed with error: ${(e as Error).message}`);
 }
 
-console.log('Downloading finished');
+log.info('Downloading finished');
 
 await Actor.exit();

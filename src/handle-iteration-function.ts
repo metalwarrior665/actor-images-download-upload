@@ -9,12 +9,12 @@ import md5 from 'md5';
 
 import { downloadUpload } from './download-upload.js';
 import { checkIfAlreadyOnS3 } from './utils.js';
-import { archiveKVS } from './archive-files.js';
+import { archiveKVS, deleteArchiveFile } from './archive-files.js';
 
 export default async ({ data, iterationInput, iterationIndex, stats, originalInput }: any) => {
     const props = stats.getProps();
 
-    // periodically displaying stats
+    // Periodically displaying stats
     const statsInterval = setInterval(async () => {
         stats.display();
         await Actor.setValue('stats-state', stats.return());
@@ -34,7 +34,7 @@ export default async ({ data, iterationInput, iterationIndex, stats, originalInp
         stateFields,
         noDownloadRun,
     } = iterationInput;
-    console.log('loading state...');
+    log.info('loading state...');
 
     const state: any = (await Actor.getValue(`STATE-IMAGES-${iterationIndex}`)) || {};
 
@@ -48,10 +48,10 @@ export default async ({ data, iterationInput, iterationIndex, stats, originalInp
         };
     }
 
-    console.log('Images loaded from state:');
-    console.log(`Uploaded: ${Object.values(state).filter((val: any) => val.imageUploaded).length}`);
-    console.log(`Failed: ${Object.values(state).filter((val: any) => val.imageUploaded === false).length}`);
-    console.log(`Not yet handled: ${Object.values(state).filter((val: any) => val.imageUploaded === undefined).length}`);
+    log.info('Images loaded from state:');
+    log.info(`Uploaded: ${Object.values(state).filter((val: any) => val.imageUploaded).length}`);
+    log.info(`Failed: ${Object.values(state).filter((val: any) => val.imageUploaded === false).length}`);
+    log.info(`Not yet handled: ${Object.values(state).filter((val: any) => val.imageUploaded === undefined).length}`);
 
     // SAVING STATE
     const stateInterval = setInterval(async () => {
@@ -69,16 +69,16 @@ export default async ({ data, iterationInput, iterationIndex, stats, originalInp
 
     if (data.length === 0) throw new Error("Didn't load any items from kv store or dataset");
 
-    console.log(`We got ${data.length} items in iteration index: ${iterationIndex}`);
-    console.log('STARTING DOWNLOAD');
+    log.info(`We got ${data.length} items in iteration index: ${iterationIndex}`);
+    log.info('STARTING DOWNLOAD');
 
     // Filtering items
     if (preDownloadFunction) {
         try {
-            console.log('Transforming items with pre download function');
-            console.log(preDownloadFunction);
+            log.info('Transforming items with pre download function');
+            log.info(preDownloadFunction);
             data = await preDownloadFunction({ data, iterationIndex, input: originalInput });
-            console.log(`We got ${data.length} after pre download`);
+            log.info(`We got ${data.length} after pre download`);
         } catch (e) {
             console.dir(e);
             throw new Error('Pre download function failed with error');
@@ -158,7 +158,7 @@ export default async ({ data, iterationInput, iterationIndex, stats, originalInp
     const requestHandler = async ({ request }: BasicCrawlingContext) => {
         const { url } = request;
 
-        log.info(`Downloading image ${url.slice(0, 100)}...`);
+        log.info(`Downloading image ${url.slice(0, 55)}...`);
 
         if (typeof state[url].imageUploaded === 'boolean') return; // means it was already download before
         const item = data[state[url].itemIndex];
@@ -224,7 +224,7 @@ export default async ({ data, iterationInput, iterationIndex, stats, originalInp
 
     await crawler.run();
 
-    console.log(`All images in iteration ${iterationIndex} were processed`);
+    log.info(`All images in iteration ${iterationIndex} were processed`);
 
     // TODO: Until fixed, move this to separate fork
     /*
@@ -233,7 +233,7 @@ export default async ({ data, iterationInput, iterationIndex, stats, originalInp
         const dumpPath = path.join(__dirname, dumpName);
 
         heapdump.writeSnapshot(dumpPath, (err, filename) => {
-            console.log('snapshot written:', err, filename);
+            log.info('snapshot written:', err, filename);
         });
 
         const dumpBuff = fs.readFileSync(dumpPath);
@@ -242,22 +242,30 @@ export default async ({ data, iterationInput, iterationIndex, stats, originalInp
     */
 
     if (uploadTo === 'zip-file') {
-        log.info('Archiving KVS to ZipFileOutput...');
+        log.info('Archiving Images...');
+
         const storeHandle: KeyValueStore = downloadUploadOptions.uploadOptions.storeHandle;
 
         const archive = await archiveKVS(storeHandle);
-        await Actor.setValue('ZipFileOutput', archive, { contentType: 'application/zip' });
+
+        await Actor.setValue('zip-output', archive, { contentType: 'application/zip' });
+
+        const zipFileUrl = (await Actor.openKeyValueStore()).getPublicUrl('zip-output');
+
+        await Actor.pushData({ zipFileUrl });
+
         // Drop the store after we are done with it
         await storeHandle.drop();
+        deleteArchiveFile();
     }
 
     // postprocessing function
     if ((outputTo && outputTo !== 'no-output')) {
-        console.log('Will save output data to:', outputTo);
+        log.info('Will save output data to:', outputTo);
         let processedData = postDownloadFunction
             ? await postDownloadFunction({ data, state, fileNameFunction, md5, iterationIndex, input: originalInput })
             : data;
-        console.log('Post-download processed data length:', processedData.length);
+        log.info('Post-download processed data length:', processedData.length);
 
         if (outputTo === 'key-value-store') {
             const alreadySavedData: any[] = (await Actor.getValue('OUTPUT')) || [];
@@ -268,9 +276,9 @@ export default async ({ data, iterationInput, iterationIndex, stats, originalInp
         if (outputTo === 'dataset') {
             const chunkSize = 500;
             let index = iterationState[iterationIndex].pushed;
-            console.log(`Loaded starting index: ${index}`);
+            log.info(`Loaded starting index: ${index}`);
             for (; index < processedData.length; index += chunkSize) {
-                console.log(`pushing data ${index}:${index + chunkSize}`);
+                log.info(`pushing data ${index}:${index + chunkSize}`);
                 iterationState[iterationIndex].pushed = index + chunkSize;
                 await Promise.all([
                     Actor.pushData(processedData.slice(index, index + chunkSize)),
@@ -292,6 +300,6 @@ export default async ({ data, iterationInput, iterationIndex, stats, originalInp
     };
     await Actor.setValue('STATE-ITERATION', iterationState);
     await Actor.setValue(`STATE-IMAGES-${iterationIndex}`, state);
-    console.log('END OF ITERATION STATS:');
+    log.info('END OF ITERATION STATS:');
     stats.display();
 };

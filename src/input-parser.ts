@@ -1,4 +1,4 @@
-import { Actor } from 'apify';
+import { Actor, log } from 'apify';
 
 import { defaultFileNameFunction } from './default-functions.js';
 import { DEFAULT_BATCH_SIZE, DEFAULT_REQUEST_EXTERNAL_TIMEOUT } from './constants.js';
@@ -59,7 +59,7 @@ export const constantsFromInput = async (input: any) => {
     };
 
     if (uploadTo === 'zip-file') {
-        uploadOptions.storeHandle = await Actor.openKeyValueStore('ZIP_STORE');
+        uploadOptions.storeHandle = await Actor.openKeyValueStore('zip-store');
     } else if (uploadStoreName) {
         uploadOptions.storeHandle = await Actor.openKeyValueStore(uploadStoreName);
     }
@@ -150,7 +150,7 @@ export const checkInput = (input: any) => {
     }
 
     if (!input.pathToImageUrls) {
-        console.log('Path to image Urls not specified, will assume that input is plain image Urls array');
+        log.warning('Path to image Urls not specified, will assume that input is plain image Urls array');
     }
     return input;
 };
