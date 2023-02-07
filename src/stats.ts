@@ -1,3 +1,5 @@
+import { log } from 'apify';
+
 export type StatsState = {
     itemsTotal: number;
     itemsSkipped: number;
@@ -98,8 +100,8 @@ export class Stats {
     display() {
         const statsObject: any = this.return();
         delete statsObject.failedInfo;
-        console.log('*** STATS ***');
-        console.dir(statsObject);
+        log.info('*** STATS ***');
+        log.info(JSON.stringify(statsObject, null, 2));
     }
 
     getProps() {

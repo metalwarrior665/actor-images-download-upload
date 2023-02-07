@@ -1,7 +1,7 @@
-import { Actor } from 'apify';
-import { BasicCrawler, BasicCrawlingContext, RequestList } from 'crawlee';
+import { Actor, log } from 'apify';
+import { BasicCrawler, BasicCrawlingContext, KeyValueStore, RequestList, sleep } from 'crawlee';
 import objectPath from 'object-path';
-import md5 from 'crypto-js/md5';
+import md5 from 'md5';
 
 // import path from 'path';
 // import fs from 'fs';
@@ -9,6 +9,7 @@ import md5 from 'crypto-js/md5';
 
 import { downloadUpload } from './download-upload.js';
 import { checkIfAlreadyOnS3 } from './utils.js';
+import { archiveKVS } from './archive-files.js';
 
 export default async ({ data, iterationInput, iterationIndex, stats, originalInput }: any) => {
     const props = stats.getProps();
@@ -155,47 +156,48 @@ export default async ({ data, iterationInput, iterationIndex, stats, originalInp
     };
 
     const requestHandler = async ({ request }: BasicCrawlingContext) => {
-        const { url, label } = request;
+        const { url } = request;
 
-        if (!label) {
-            if (typeof state[url].imageUploaded === 'boolean') return; // means it was already download before
-            const item = data[state[url].itemIndex];
-            const key = fileNameFunction({ url, md5, state, item, iterationIndex, input: originalInput });
-            // If filename is not a string, we don't continue. This can be used to prevent the download at this point
-            if (typeof key !== 'string') {
-                state[url].imageUploaded = false;
-                state[url].errors = [{ when: 'before-download', error: 'fileNameFunction didn\'t provide a string' }];
+        log.info(`Downloading image ${url.slice(0, 100)}...`);
+
+        if (typeof state[url].imageUploaded === 'boolean') return; // means it was already download before
+        const item = data[state[url].itemIndex];
+        const key = fileNameFunction({ url, md5, state, item, iterationIndex, input: originalInput });
+        // If filename is not a string, we don't continue. This can be used to prevent the download at this point
+        if (typeof key !== 'string') {
+            state[url].imageUploaded = false;
+            state[url].errors = [{ when: 'before-download', error: 'fileNameFunction didn\'t provide a string' }];
+            state[url] = filterStateFields(state[url], stateFields);
+            stats.inc(props.imagesNoFilename, true);
+            return;
+        }
+        if (s3CheckIfAlreadyThere && uploadTo === 's3') {
+            const { isThere, errors } = await checkIfAlreadyOnS3(key, downloadUploadOptions.uploadOptions);
+            if (isThere) {
+                state[url].imageUploaded = true; // not really uploaded but we need to add this status
+                state[url].errors = errors;
                 state[url] = filterStateFields(state[url], stateFields);
-                stats.inc(props.imagesNoFilename, true);
+                stats.inc(props.imagesAlreadyOnS3, true);
                 return;
             }
-            if (s3CheckIfAlreadyThere && uploadTo === 's3') {
-                const { isThere, errors } = await checkIfAlreadyOnS3(key, downloadUploadOptions.uploadOptions);
-                if (isThere) {
-                    state[url].imageUploaded = true; // not really uploaded but we need to add this status
-                    state[url].errors = errors;
-                    state[url] = filterStateFields(state[url], stateFields);
-                    stats.inc(props.imagesAlreadyOnS3, true);
-                    return;
-                }
-            }
-            // We provide an option for a dummy run to check duplicates etc.
-            const info = noDownloadRun
-                ? { imageUploaded: true, time: { downloading: 0, processing: 0, uploading: 0 } }
-                : await downloadUpload(url, key, downloadUploadOptions, imageCheck);
-            stats.add(props.timeSpentDownloading, info.time.downloading, true);
-            stats.add(props.timeSpentProcessing, info.time.processing, true);
-            stats.add(props.timeSpentUploading, info.time.uploading, true);
-
-            state[url] = { ...state[url], ...info };
-            state[url] = filterStateFields(state[url], stateFields);
-            if (info.imageUploaded) {
-                stats.inc(props.imagesUploaded, true);
-            } else {
-                stats.inc(props.imagesFailed, true);
-                stats.addFailed({ url, errors: info.errors });
-            }
         }
+        // We provide an option for a dummy run to check duplicates etc.
+        const info = noDownloadRun
+            ? { imageUploaded: true, time: { downloading: 0, processing: 0, uploading: 0 } }
+            : await downloadUpload(url, key, downloadUploadOptions, imageCheck);
+        stats.add(props.timeSpentDownloading, info.time.downloading, true);
+        stats.add(props.timeSpentProcessing, info.time.processing, true);
+        stats.add(props.timeSpentUploading, info.time.uploading, true);
+
+        state[url] = { ...state[url], ...info };
+        state[url] = filterStateFields(state[url], stateFields);
+        if (info.imageUploaded) {
+            stats.inc(props.imagesUploaded, true);
+        } else {
+            stats.inc(props.imagesFailed, true);
+            stats.addFailed({ url, errors: info.errors });
+        }
+
     };
 
     const crawler = new BasicCrawler({
@@ -238,6 +240,16 @@ export default async ({ data, iterationInput, iterationIndex, stats, originalInp
         await Actor.setValue(dumpName, dumpBuff, { contentType: 'application/octet-stream' });
     }
     */
+
+    if (uploadTo === 'zip-file') {
+        log.info('Archiving KVS to ZipFileOutput...');
+        const storeHandle: KeyValueStore = downloadUploadOptions.uploadOptions.storeHandle;
+
+        const archive = await archiveKVS(storeHandle);
+        await Actor.setValue('ZipFileOutput', archive, { contentType: 'application/zip' });
+        // Drop the store after we are done with it
+        await storeHandle.drop();
+    }
 
     // postprocessing function
     if ((outputTo && outputTo !== 'no-output')) {

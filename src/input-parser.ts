@@ -52,11 +52,18 @@ export const constantsFromInput = async (input: any) => {
         convertWebpToPng,
     };
     const s3Credentials = { s3Bucket, s3AccessKeyId, s3SecretAccessKey };
-    const uploadOptions = {
+    const uploadOptions: any = {
         uploadTo,
         s3Client: uploadTo === 's3' ? setS3(s3Credentials) : null,
-        storeHandle: uploadStoreName ? await Actor.openKeyValueStore(uploadStoreName) : null,
+        storeHandle: null,
     };
+
+    if (uploadTo === 'zip-file') {
+        uploadOptions.storeHandle = await Actor.openKeyValueStore('ZIP_STORE');
+    } else if (uploadStoreName) {
+        uploadOptions.storeHandle = await Actor.openKeyValueStore(uploadStoreName);
+    }
+
     const downloadOptions = {
         downloadTimeout,
         maxRetries: imageCheckMaxRetries,

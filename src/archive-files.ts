@@ -1,5 +1,6 @@
-import { KeyValueStore } from "crawlee";
+import { KeyValueStore, log } from "crawlee";
 import archiver from "archiver";
+import { fileTypeFromBuffer, FileTypeResult } from "file-type";
 
 export const archiveKVS = async (store: KeyValueStore) => {
     const buffers: any = [];
@@ -14,19 +15,23 @@ export const archiveKVS = async (store: KeyValueStore) => {
         });
 
         archive.on("end", () => {
-            console.log("End called");
             resolve(true);
         });
 
-        archive.on("error", reject);
-
-        await store.forEachKey(async (key, index, info) => {
-            const val = (await store.getValue(key)) as Buffer;
-            const split = key.split("-");
-            archive.append(val, { name: `${split[0]}.${split[1]}` });
+        archive.on("error", (err) => {
+            log.error("Error archiving file", err);
+            reject(err);
         });
 
-        archive.finalize();
+        await store.forEachKey(async (key) => {
+            const buffer = (await store.getValue(key)) as Buffer;
+            const { ext } = await fileTypeFromBuffer(buffer) as FileTypeResult;
+
+            archive.append(buffer, { name: `${key}.${ext}` });
+        });
+
+        return await archive.finalize();
     });
+
     return Buffer.concat(buffers);
 };

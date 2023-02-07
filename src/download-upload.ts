@@ -1,4 +1,4 @@
-import { Actor } from 'apify';
+import { Actor, log } from 'apify';
 import needle from 'needle';
 import { HttpsProxyAgent } from 'hpagent';
 
@@ -17,7 +17,7 @@ const deduplicateErrors = (errors: any) => {
 
 const upload = async (key: string, buffer: any, uploadOptions: any, contentType: any) => {
     const errors: string[] = [];
-    if (uploadOptions.uploadTo === 'key-value-store') {
+    if (uploadOptions.uploadTo === 'key-value-store' || uploadOptions.uploadTo === 'zip-file') {
         if (uploadOptions.storeHandle) {
             await uploadOptions.storeHandle.setValue(key, buffer, { contentType })
                 .catch((e: Error) => {
@@ -56,6 +56,7 @@ const download = async (url: string, imageCheck: ImageCheck, key: string, downlo
     const proxyUrl = proxyConfiguration && proxyConfiguration.useApifyProxy
         ? await (await Actor.createProxyConfiguration(proxyConfiguration))!.newUrl()
         : null;
+    const proxyAgent = proxyUrl ? new HttpsProxyAgent({ proxy: proxyUrl! }) : null;
 
     const errors: string[] = [];
     let imageDownloaded = false;
@@ -64,20 +65,19 @@ const download = async (url: string, imageCheck: ImageCheck, key: string, downlo
     let sizesMain;
 
     const handleError = (e: Error) => {
-        console.log(`Error in downloading`, e);
+        log.debug(`Error downloading image:`, e);
         errors.push(e.toString());
     };
 
     const sendRequest = async () => {
         return Promise.race([
-            needle('get', url, {
-                agent: proxyUrl ? new HttpsProxyAgent({
-                    proxy: proxyUrl!
-                }) : null,
-                setEncoding: null
-            }).catch(handleError),
-            // httpRequest(httpReqOptions),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeouted')), downloadTimeout)),
+            needle("get", url, {
+                agent: proxyAgent,
+                setEncoding: null,
+            }).catch(err => {
+                throw new Error(err);
+            }),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Timed out')), downloadTimeout)),
         ]).catch(handleError);
     };
 
