@@ -70,7 +70,7 @@
                 "no-upload"
             ],
             "enumTitles": [
-                "Zip file",
+                "Zip file (Can't be used with output to dataset)",
                 "Key-value store",
                 "S3",
                 "No upload"

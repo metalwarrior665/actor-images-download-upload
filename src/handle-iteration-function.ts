@@ -47,6 +47,10 @@ export default async ({ data, iterationInput, iterationIndex, stats, originalInp
             finished: false,
         };
     }
+    
+    if (outputTo === 'dataset' && uploadTo === 'zip-file') {
+        log.warning('You cannot use dataset and zip-file at the same time, using zip-file only');
+    }
 
     log.info('Images loaded from state:');
     log.info(`Uploaded: ${Object.values(state).filter((val: any) => val.imageUploaded).length}`);
@@ -248,19 +252,20 @@ export default async ({ data, iterationInput, iterationIndex, stats, originalInp
 
         const archive = await archiveKVS(storeHandle);
 
-        await Actor.setValue('zip-output', archive, { contentType: 'application/zip' });
+        await Actor.setValue('output-images', archive, { contentType: 'application/zip' });
 
-        const zipFileUrl = (await Actor.openKeyValueStore()).getPublicUrl('zip-output');
+        const zipFileUrl = (await Actor.openKeyValueStore()).getPublicUrl('output-images');
 
         await Actor.pushData({ zipFileUrl });
 
         // Drop the store after we are done with it
         await storeHandle.drop();
+        
         deleteArchiveFile();
     }
 
     // postprocessing function
-    if ((outputTo && outputTo !== 'no-output')) {
+    if ((outputTo && outputTo !== 'no-output') && !(outputTo === 'dataset' && uploadTo === 'zip-file')) {
         log.info('Will save output data to:', outputTo);
         let processedData = postDownloadFunction
             ? await postDownloadFunction({ data, state, fileNameFunction, md5, iterationIndex, input: originalInput })
