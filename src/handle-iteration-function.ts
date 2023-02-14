@@ -1,22 +1,23 @@
-const Apify = require('apify');
+import { Actor, log } from 'apify';
+import { BasicCrawler, BasicCrawlingContext, KeyValueStore, RequestList, sleep } from 'crawlee';
+import objectPath from 'object-path';
+import md5 from 'md5';
 
-const objectPath = require('object-path');
-const md5 = require('md5');
+// import path from 'path';
+// import fs from 'fs';
+// import heapdump from 'heapdump';
 
-// const path = require('path');
-// const fs = require('fs');
-// const heapdump = require('heapdump');
+import { downloadUpload } from './download-upload.js';
+import { checkIfAlreadyOnS3 } from './utils.js';
+import { archiveKVS, deleteArchiveFile } from './archive-files.js';
 
-const { downloadUpload } = require('./download-upload');
-const { checkIfAlreadyOnS3 } = require('./utils');
-
-module.exports = async ({ data, iterationInput, iterationIndex, stats, originalInput }) => {
+export default async ({ data, iterationInput, iterationIndex, stats, originalInput }: any) => {
     const props = stats.getProps();
 
-    // periodially displaying stats
+    // Periodically displaying stats
     const statsInterval = setInterval(async () => {
         stats.display();
-        await Apify.setValue('stats-state', stats.return());
+        await Actor.setValue('stats-state', stats.return());
     }, 10 * 1000);
 
     const {
@@ -33,11 +34,11 @@ module.exports = async ({ data, iterationInput, iterationIndex, stats, originalI
         stateFields,
         noDownloadRun,
     } = iterationInput;
-    console.log('loading state...');
+    log.info('loading state...');
 
-    const state = (await Apify.getValue(`STATE-IMAGES-${iterationIndex}`)) || {};
+    const state: any = (await Actor.getValue(`STATE-IMAGES-${iterationIndex}`)) || {};
 
-    const iterationState = await Apify.getValue('STATE-ITERATION');
+    const iterationState: any = await Actor.getValue('STATE-ITERATION');
     if (!iterationState[iterationIndex]) {
         iterationState[iterationIndex] = {
             index: iterationIndex,
@@ -46,18 +47,22 @@ module.exports = async ({ data, iterationInput, iterationIndex, stats, originalI
             finished: false,
         };
     }
+    
+    if (outputTo === 'dataset' && uploadTo === 'zip-file') {
+        log.warning('You cannot use dataset and zip-file at the same time, using zip-file only');
+    }
 
-    console.log('images loaded from state:');
-    console.log(`Uploaded: ${Object.values(state).filter((val) => val.imageUploaded).length}`);
-    console.log(`Failed: ${Object.values(state).filter((val) => val.imageUploaded === false).length}`);
-    console.log(`Not yet handled: ${Object.values(state).filter((val) => val.imageUploaded === undefined).length}`);
+    log.info('Images loaded from state:');
+    log.info(`Uploaded: ${Object.values(state).filter((val: any) => val.imageUploaded).length}`);
+    log.info(`Failed: ${Object.values(state).filter((val: any) => val.imageUploaded === false).length}`);
+    log.info(`Not yet handled: ${Object.values(state).filter((val: any) => val.imageUploaded === undefined).length}`);
 
     // SAVING STATE
     const stateInterval = setInterval(async () => {
-        await Apify.setValue(`STATE-IMAGES-${iterationIndex}`, state);
+        await Actor.setValue(`STATE-IMAGES-${iterationIndex}`, state);
     }, 10 * 1000);
 
-    Object.keys(state).forEach((key) => {
+    Object.keys(state).forEach((key: any) => {
         state[key].fromState = true;
     });
 
@@ -68,29 +73,29 @@ module.exports = async ({ data, iterationInput, iterationIndex, stats, originalI
 
     if (data.length === 0) throw new Error("Didn't load any items from kv store or dataset");
 
-    console.log(`We got ${data.length} items in iteration index: ${iterationIndex}`);
-    console.log('STARTING DOWNLOAD');
+    log.info(`We got ${data.length} items in iteration index: ${iterationIndex}`);
+    log.info('STARTING DOWNLOAD');
 
-    // filtering items
+    // Filtering items
     if (preDownloadFunction) {
         try {
-            console.log('Transforming items with pre download function');
-            console.log(preDownloadFunction);
+            log.info('Transforming items with pre download function');
+            log.info(preDownloadFunction);
             data = await preDownloadFunction({ data, iterationIndex, input: originalInput });
-            console.log(`We got ${data.length} after pre download`);
+            log.info(`We got ${data.length} after pre download`);
         } catch (e) {
             console.dir(e);
             throw new Error('Pre download function failed with error');
         }
     }
 
-    const itemsSkippedCount = data.filter((item) => !!item.skipDownload).length;
+    const itemsSkippedCount = data.filter((item: any) => !!item.skipDownload).length;
     stats.add(props.itemsSkipped, itemsSkippedCount, updateStats);
 
-    // add images to state
+    // Add images to state
     try {
         let imageIndex = 0;
-        data.forEach((item, itemIndex) => {
+        data.forEach((item: any, itemIndex: number) => {
             if (item.skipDownload) return; // we skip item with this field
             let imagesFromPath = objectPath.get(item, pathToImageUrls);
             if (!Array.isArray(imagesFromPath) && typeof imagesFromPath !== 'string') {
@@ -104,7 +109,7 @@ module.exports = async ({ data, iterationInput, iterationIndex, stats, originalI
                 stats.inc(props.itemsWithoutImages, updateStats);
                 return;
             }
-            imagesFromPath.forEach((image) => {
+            imagesFromPath.forEach((image: any) => {
                 stats.inc(props.imagesTotal, updateStats);
                 if (typeof image !== 'string') {
                     stats.inc(props.imagesNotString, updateStats);
@@ -133,29 +138,31 @@ module.exports = async ({ data, iterationInput, iterationIndex, stats, originalI
         });
     } catch (e) {
         console.dir(e);
-        throw new Error('Adding images to state failed with error:', e);
+        throw new Error(`Adding images to state failed with error: ${(e as Error).message}`);
     }
 
-    const requestList = await Apify.openRequestList('main', Object.keys(state).map((url) => ({ url })));
+    const requestList = await RequestList.open('main', Object.keys(state).map((url) => ({ url })));
 
     iterationState[iterationIndex].started = true;
-    await Apify.setValue('STATE-ITERATION', iterationState);
+    await Actor.setValue('STATE-ITERATION', iterationState);
 
-    const filterStateFields = (stateObject, fields) => {
+    const filterStateFields = (stateObject: any, fields: any) => {
         if (!fields) {
             return stateObject;
         }
-        const newObject = {
+        const newObject: any = {
             imageUploaded: stateObject.imageUploaded,
         };
-        fields.forEach((field) => {
+        fields.forEach((field: any) => {
             newObject[field] = stateObject[field];
         });
         return newObject;
     };
 
-    const handleRequestFunction = async ({ request }) => {
+    const requestHandler = async ({ request }: BasicCrawlingContext) => {
         const { url } = request;
+
+        log.info(`Downloading image ${url.slice(0, 55)}...`);
 
         if (typeof state[url].imageUploaded === 'boolean') return; // means it was already download before
         const item = data[state[url].itemIndex];
@@ -194,11 +201,12 @@ module.exports = async ({ data, iterationInput, iterationIndex, stats, originalI
             stats.inc(props.imagesFailed, true);
             stats.addFailed({ url, errors: info.errors });
         }
+
     };
 
-    const crawler = new Apify.BasicCrawler({
+    const crawler = new BasicCrawler({
         requestList,
-        handleRequestFunction,
+        requestHandler,
         autoscaledPoolOptions: {
             desiredConcurrencyRatio: 0.4,
             scaleUpStepRatio: 0.5,
@@ -210,17 +218,17 @@ module.exports = async ({ data, iterationInput, iterationIndex, stats, originalI
             },
         },
         maxConcurrency,
-        handleFailedRequestFunction: async ({ request, error }) => {
+        failedRequestHandler: async ({ request }: BasicCrawlingContext, error: Error) => {
             const { url } = request;
             stats.inc(props.imagesFailed, true);
             stats.addFailed({ url, errors: [`Handle function failed! ${error.toString()}`] });
         },
-        handleRequestTimeoutSecs: 180,
+        requestHandlerTimeoutSecs: 180,
     });
 
     await crawler.run();
 
-    console.log(`All images in iteration ${iterationIndex} were processed`);
+    log.info(`All images in iteration ${iterationIndex} were processed`);
 
     // TODO: Until fixed, move this to separate fork
     /*
@@ -229,38 +237,57 @@ module.exports = async ({ data, iterationInput, iterationIndex, stats, originalI
         const dumpPath = path.join(__dirname, dumpName);
 
         heapdump.writeSnapshot(dumpPath, (err, filename) => {
-            console.log('snapshot written:', err, filename);
+            log.info('snapshot written:', err, filename);
         });
 
         const dumpBuff = fs.readFileSync(dumpPath);
-        await Apify.setValue(dumpName, dumpBuff, { contentType: 'application/octet-stream' });
+        await Actor.setValue(dumpName, dumpBuff, { contentType: 'application/octet-stream' });
     }
     */
 
+    if (uploadTo === 'zip-file') {
+        log.info('Archiving Images...');
+
+        const storeHandle: KeyValueStore = downloadUploadOptions.uploadOptions.storeHandle;
+
+        const archive = await archiveKVS(storeHandle);
+
+        await Actor.setValue('output-images', archive, { contentType: 'application/zip' });
+
+        const zipFileUrl = (await Actor.openKeyValueStore()).getPublicUrl('output-images');
+
+        await Actor.pushData({ zipFileUrl });
+
+        // Drop the store after we are done with it
+        await storeHandle.drop();
+        
+        deleteArchiveFile();
+    }
+
     // postprocessing function
-    if ((outputTo && outputTo !== 'no-output')) {
-        console.log('Will save output data to:', outputTo);
+    if ((outputTo && outputTo !== 'no-output') && !(outputTo === 'dataset' && uploadTo === 'zip-file')) {
+        log.info('Will save output data to:', outputTo);
         let processedData = postDownloadFunction
             ? await postDownloadFunction({ data, state, fileNameFunction, md5, iterationIndex, input: originalInput })
             : data;
-        console.log('Post-download processed data length:', processedData.length);
+        log.info('Post-download processed data length:', processedData.length);
 
         if (outputTo === 'key-value-store') {
-            const alreadySavedData = (await Apify.getValue('OUTPUT')) || [];
-            await Apify.setValue('OUTPUT', alreadySavedData.concat(processedData));
+            const alreadySavedData: any[] = (await Actor.getValue('OUTPUT')) || [];
+            await Actor.setValue('OUTPUT', alreadySavedData.concat(processedData));
         }
 
         // Have to save state of dataset push because it takes too long
         if (outputTo === 'dataset') {
             const chunkSize = 500;
             let index = iterationState[iterationIndex].pushed;
-            console.log(`Loaded starting index: ${index}`);
+            log.info(`Loaded starting index: ${index}`);
             for (; index < processedData.length; index += chunkSize) {
-                console.log(`pushing data ${index}:${index + chunkSize}`);
+                log.info(`pushing data ${index}:${index + chunkSize}`);
                 iterationState[iterationIndex].pushed = index + chunkSize;
                 await Promise.all([
-                    Apify.pushData(processedData.slice(index, index + chunkSize)),
-                    Apify.setValue('STATE-ITERATION', iterationState),
+                    Actor.pushData(processedData.slice(index, index + chunkSize)),
+                    Actor.setValue('STATE-ITERATION', iterationState),
                 ]);
             }
         }
@@ -276,8 +303,8 @@ module.exports = async ({ data, iterationInput, iterationIndex, stats, originalI
         finished: false,
         pushed: 0,
     };
-    await Apify.setValue('STATE-ITERATION', iterationState);
-    await Apify.setValue(`STATE-IMAGES-${iterationIndex}`, state);
-    console.log('END OF ITERATION STATS:');
+    await Actor.setValue('STATE-ITERATION', iterationState);
+    await Actor.setValue(`STATE-IMAGES-${iterationIndex}`, state);
+    log.info('END OF ITERATION STATS:');
     stats.display();
 };

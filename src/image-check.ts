@@ -1,14 +1,14 @@
-const imageSize = require('image-size');
-const fileType = require('file-type');
-const webp = require('webp-converter');
-const fs = require('fs');
-const { promisify } = require('util');
+import imageSize from 'image-size';
+import { fileTypeFromBuffer, FileTypeResult } from 'file-type';
+import { dwebp } from 'webp-converter';
+import fs from 'fs';
+import { promisify } from 'util';
 
 const writeFileAsync = promisify(fs.writeFile);
 const readFileAsync = promisify(fs.readFile);
 
-const converter = (input, output, option) => new Promise((res, rej) => {
-    webp.dwebp(input, output, option, (status, err) => {
+const converter = (input: any, output: any, option: any) => new Promise((res, rej) => {
+    dwebp(input, output, option, (status: any, err: any) => {
         if (status === '101') {
             rej(err);
         } else if (status === '100') {
@@ -19,7 +19,7 @@ const converter = (input, output, option) => new Promise((res, rej) => {
     });
 });
 
-module.exports.convertWebpToPng = async (origBuffer, key) => {
+export const convertWebpToPng = async (origBuffer: any, key: any) => {
     // sanitize key for slashes
     const folders = key.split('/');
     const sanitizedKey = folders[folders.length - 1];
@@ -30,14 +30,20 @@ module.exports.convertWebpToPng = async (origBuffer, key) => {
     return readFileAsync(pngKey);
 };
 
-module.exports.checkIfImage = async (response, imageCheck) => {
-    const result = {
+export const checkIfImage = async (response: any, imageCheck: any) => {
+    const result: {
+        isImage: boolean;
+        error?: string;
+        contentType?: string;
+        sizes: any;
+        retry: boolean;
+    } = {
         isImage: false,
         error: undefined,
         contentType: undefined,
         sizes: {},
         retry: false,
-    };
+    }
     try {
         if (!response) {
             result.error = 'No response object, probably crashed';
@@ -58,7 +64,7 @@ module.exports.checkIfImage = async (response, imageCheck) => {
         const buffer = response.body;
 
         if (imageCheck.type === 'content-type' || imageCheck.type === 'image-size') {
-            const { mime } = fileType(buffer);
+            const { mime } = await fileTypeFromBuffer(buffer) as FileTypeResult;
             result.contentType = mime;
             if (!mime.includes('image/')) {
                 result.error = `Content type is not an image. Instead: ${mime}`;

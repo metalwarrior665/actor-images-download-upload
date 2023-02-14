@@ -1,6 +1,12 @@
 {
-    "extends": "@apify",
+    "extends": [
+        "@apify/ts",
+        "plugin:@typescript-eslint/recommended-requiring-type-checking",
+        "plugin:@typescript-eslint/strict",
+        "prettier"
+    ],
     "rules": {
+        "@typescript-eslint/consistent-type-definitions": ["error", "type"],
         "no-console": "off"
     }
 }

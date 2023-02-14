@@ -1,11 +1,13 @@
-const Apify = require('apify');
-const rp = require('request-fixed-tunnel-agent');
+import { Actor, log } from 'apify';
+import needle from 'needle';
+import { HttpsProxyAgent } from 'hpagent';
 
-const { checkIfImage, convertWebpToPng } = require('./image-check');
+import { checkIfImage, convertWebpToPng } from './image-check.js';
+import { ImageCheck } from './types.js';
 
-const deduplicateErrors = (errors) => {
-    return errors.reduce((newErrors, error) => {
-        const maybeFoundDup = newErrors.find((er) => er.when === error.when && er.message === error.message);
+const deduplicateErrors = (errors: any) => {
+    return errors.reduce((newErrors: any, error: any) => {
+        const maybeFoundDup = newErrors.find((er: any) => er.when === error.when && er.message === error.message);
         if (maybeFoundDup) {
             return newErrors;
         }
@@ -13,17 +15,17 @@ const deduplicateErrors = (errors) => {
     }, []);
 };
 
-const upload = async (key, buffer, uploadOptions, contentType) => {
-    const errors = [];
-    if (uploadOptions.uploadTo === 'key-value-store') {
+const upload = async (key: string, buffer: any, uploadOptions: any, contentType: any) => {
+    const errors: string[] = [];
+    if (uploadOptions.uploadTo === 'key-value-store' || uploadOptions.uploadTo === 'zip-file') {
         if (uploadOptions.storeHandle) {
             await uploadOptions.storeHandle.setValue(key, buffer, { contentType })
-                .catch((e) => {
+                .catch((e: Error) => {
                     errors.push(e.message);
                 });
         } else {
-            await Apify.setValue(key, buffer, { contentType })
-                .catch((e) => {
+            await Actor.setValue(key, buffer, { contentType })
+                .catch((e: Error) => {
                     errors.push(e.message);
                 });
         }
@@ -32,7 +34,7 @@ const upload = async (key, buffer, uploadOptions, contentType) => {
         await uploadOptions.s3Client.putObject({
             Key: key,
             Body: buffer,
-        }).promise().catch((e) => {
+        }).promise().catch((e: Error) => {
             errors.push(e.message);
         });
     }
@@ -48,38 +50,34 @@ const upload = async (key, buffer, uploadOptions, contentType) => {
     };
 };
 
-const download = async (url, imageCheck, key, downloadOptions) => {
+const download = async (url: string, imageCheck: ImageCheck, key: string, downloadOptions: any) => {
     const { downloadTimeout, maxRetries, proxyConfiguration } = downloadOptions;
 
     const proxyUrl = proxyConfiguration && proxyConfiguration.useApifyProxy
-        ? (await Apify.createProxyConfiguration(proxyConfiguration)).newUrl()
+        ? await (await Actor.createProxyConfiguration(proxyConfiguration))!.newUrl()
         : null;
-    const normalOptions = {
-        strictSSL: false,
-        url,
-        encoding: null,
-        resolveWithFullResponse: true,
-    };
-    const proxyOptions = {
-        ...normalOptions,
-        proxy: proxyUrl,
-    };
+    const proxyAgent = proxyUrl ? new HttpsProxyAgent({ proxy: proxyUrl! }) : null;
 
-    const errors = [];
+    const errors: string[] = [];
     let imageDownloaded = false;
-    let response;
+    let response: any;
     let contentTypeMain;
     let sizesMain;
 
-    const handleError = (e) => {
+    const handleError = (e: Error) => {
+        log.debug(`Error downloading image:`, e);
         errors.push(e.toString());
     };
 
-    const sendRequest = async (options) => {
+    const sendRequest = async () => {
         return Promise.race([
-            rp(options),
-            // httpRequest(httpReqOptions),
-            new Promise((resolve, reject) => setTimeout(() => reject(new Error('Timeouted')), downloadTimeout)),
+            needle("get", url, {
+                agent: proxyAgent,
+                setEncoding: null,
+            }).catch(err => {
+                throw new Error(err);
+            }),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Timed out')), downloadTimeout)),
         ]).catch(handleError);
     };
 
@@ -88,11 +86,7 @@ const download = async (url, imageCheck, key, downloadOptions) => {
 
     while (!imageDownloaded && errors.length <= maxRetries) {
         const startDownloading = Date.now();
-        if (proxyUrl) {
-            response = await sendRequest(proxyOptions);
-        } else {
-            response = await sendRequest(normalOptions);
-        }
+        response = await sendRequest();
         timeDownloading += Date.now() - startDownloading;
         if (!response) continue;
 
@@ -101,7 +95,7 @@ const download = async (url, imageCheck, key, downloadOptions) => {
         sizesMain = sizes;
         timeProcessing += Date.now() - startProcessing;
 
-        if (!isImage) {
+        if (!isImage && error) {
             errors.push(error);
         } else {
             imageDownloaded = true;
@@ -137,9 +131,9 @@ const download = async (url, imageCheck, key, downloadOptions) => {
     };
 };
 
-module.exports.downloadUpload = async (url, key, downloadUploadOptions, imageCheck) => {
+export const downloadUpload = async (url: string, key: string, downloadUploadOptions: any, imageCheck: ImageCheck) => {
     const { downloadOptions, uploadOptions } = downloadUploadOptions;
-    const errors = [];
+    const errors: any[] = [];
     const time = {
         downloading: 0,
         processing: 0,
@@ -182,7 +176,7 @@ module.exports.downloadUpload = async (url, key, downloadUploadOptions, imageChe
     downloadErrors.forEach((error) => {
         errors.push({ when: 'download', message: error });
     });
-    const infoObject = {
+    const infoObject: any = {
         imageUploaded,
     };
     if (!imageCheck.noInfo) {

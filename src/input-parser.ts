@@ -1,10 +1,11 @@
-const Apify = require('apify');
+import { Actor, log } from 'apify';
 
-const { defaultFileNameFunction } = require('./default-functions');
-const { DEFAULT_BATCH_SIZE, DEFAULT_REQUEST_EXTERNAL_TIMEOUT } = require('./constants');
-const { setS3 } = require('./utils');
+import { defaultFileNameFunction } from './default-functions.js';
+import { DEFAULT_BATCH_SIZE, DEFAULT_REQUEST_EXTERNAL_TIMEOUT } from './constants.js';
+import { setS3 } from './utils.js';
+import { ImageCheck } from './types.js';
 
-module.exports.constantsFromInput = async (input) => {
+export const constantsFromInput = async (input: any) => {
     // Small hack to automatically load from webhook (no need for payload template)
     const datasetId = input.datasetId || input.resource.defaultDatasetId;
 
@@ -12,7 +13,7 @@ module.exports.constantsFromInput = async (input) => {
         // main
         pathToImageUrls = '',
         fileNameFunction = defaultFileNameFunction,
-        // Input/ouput options
+        // Input/output options
         limit,
         offset,
         outputTo,
@@ -32,7 +33,7 @@ module.exports.constantsFromInput = async (input) => {
         imageCheckMinSize,
         imageCheckMinWidth,
         imageCheckMinHeight,
-        imageCheckMaxRetries = 1,
+        imageCheckMaxRetries = 6,
         // Misc
         proxyConfiguration,
         maxConcurrency,
@@ -43,7 +44,7 @@ module.exports.constantsFromInput = async (input) => {
         noDownloadRun = false,
     } = input;
 
-    const imageCheck = {
+    const imageCheck: ImageCheck = {
         type: imageCheckType,
         minSize: imageCheckMinSize,
         minWidth: imageCheckMinWidth,
@@ -51,11 +52,18 @@ module.exports.constantsFromInput = async (input) => {
         convertWebpToPng,
     };
     const s3Credentials = { s3Bucket, s3AccessKeyId, s3SecretAccessKey };
-    const uploadOptions = {
+    const uploadOptions: any = {
         uploadTo,
         s3Client: uploadTo === 's3' ? setS3(s3Credentials) : null,
-        storeHandle: uploadStoreName ? await Apify.openKeyValueStore(uploadStoreName) : null,
+        storeHandle: null,
     };
+
+    if (uploadTo === 'zip-file') {
+        uploadOptions.storeHandle = await Actor.openKeyValueStore('zip-store');
+    } else if (uploadStoreName) {
+        uploadOptions.storeHandle = await Actor.openKeyValueStore(uploadStoreName);
+    }
+
     const downloadOptions = {
         downloadTimeout,
         maxRetries: imageCheckMaxRetries,
@@ -91,7 +99,7 @@ module.exports.constantsFromInput = async (input) => {
     return finalInput;
 };
 
-module.exports.checkInput = (input) => {
+export const checkInput = (input: any) => {
     // Small hack to automatically load from webhook (no need for payload template)
     const datasetId = input.datasetId || input.resource.defaultDatasetId;
 
@@ -121,7 +129,7 @@ module.exports.checkInput = (input) => {
         try {
             input.fileNameFunction = eval(input.fileNameFunction); // eslint-disable-line
         } catch (e) {
-            throw new Error('fileName function cannot be evaluated as a function. Error:', e.message);
+            throw new Error(`fileName function cannot be evaluated as a function. Error: ${(e as Error).message}`);
         }
     }
 
@@ -129,7 +137,7 @@ module.exports.checkInput = (input) => {
         try {
             input.preDownloadFunction = eval(input.preDownloadFunction); // eslint-disable-line
         } catch (e) {
-            throw new Error('preDownloadFunction function cannot be evaluated as a function. Error:', e.message);
+            throw new Error(`preDownloadFunction function cannot be evaluated as a function. Error: ${(e as Error).message}`);
         }
     }
 
@@ -137,12 +145,12 @@ module.exports.checkInput = (input) => {
         try {
             input.postDownloadFunction = eval(input.postDownloadFunction); // eslint-disable-line
         } catch (e) {
-            throw new Error('postDownloadFunction function cannot be evaluated as a function. Error:', e.message);
+            throw new Error(`postDownloadFunction function cannot be evaluated as a function. Error: ${(e as Error).message}`);
         }
     }
 
     if (!input.pathToImageUrls) {
-        console.log('Path to image Urls not specified, will assume that input is plain image Urls array');
+        log.warning('Path to image Urls not specified, will assume that input is plain image Urls array');
     }
     return input;
 };
