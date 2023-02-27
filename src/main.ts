@@ -7,7 +7,7 @@ import handleIterationFunction from './handle-iteration-function.js';
 
 await Actor.init();
 
-let input = await Actor.getValue('INPUT');
+let input = await Actor.getInput();
 log.info('INPUT');
 console.dir(hideTokenFromInput(input));
 
