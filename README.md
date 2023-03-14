@@ -42,6 +42,7 @@ Most of Apify actors require a [JSON](https://www.w3schools.com/js/js_json_synta
 - `offset`: <[number](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#Number_type)> How many items to skip from the dataset. Use with `limit` to paginate over the data (can reduce memory requirement of large loads).
 - `outputTo`: <[string](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#String_type)> Useful when you want to transform the data as you download images. Can be one one `no-output`, `key-value-store` or `dataset`.  **Default**: `dataset`.
 - `storeInput`: <[string](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#String_type)> If you want to input the data from key-value store instead of dataset. Notation: `storeId-recordKey`, e.g. `kWdGzuXuKfYkrntWw-OUTPUT`.
+- `outputDatasetId`: <[string](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#String_type)> The id or name of the dataset you want to output the results to. Only relevant if `outputTo` is set to `dataset`!, e.g. `my-dataset`.
 
 **Image upload options**
 - `uploadTo`: <[string](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#String_type)> Where do you want to upload the image files. Valid options are: `key-value-store`, `s3` or `no-upload`.
