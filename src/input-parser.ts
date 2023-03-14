@@ -7,7 +7,8 @@ import { ImageCheck } from './types.js';
 
 export const constantsFromInput = async (input: any) => {
     // Small hack to automatically load from webhook (no need for payload template)
-    const datasetId = input.datasetId || input.resource.defaultDatasetId;
+    const datasetId = input.datasetId || input.resource?.defaultDatasetId;
+    const items = input.items || null;
 
     const {
         // main
@@ -18,6 +19,7 @@ export const constantsFromInput = async (input: any) => {
         offset,
         outputTo,
         storeInput,
+        outputDatasetId = undefined,
         // Image upload options
         uploadTo,
         uploadStoreName,
@@ -59,7 +61,7 @@ export const constantsFromInput = async (input: any) => {
     };
 
     if (uploadTo === 'zip-file') {
-        uploadOptions.storeHandle = await Actor.openKeyValueStore('zip-store');
+        uploadOptions.storeHandle = await Actor.openKeyValueStore(`zip-store-${Actor.config.get('defaultDatasetId')}`);
     } else if (uploadStoreName) {
         uploadOptions.storeHandle = await Actor.openKeyValueStore(uploadStoreName);
     }
@@ -74,6 +76,7 @@ export const constantsFromInput = async (input: any) => {
     const finalInput = {
         mainInput: {
             datasetId,
+            items,
             limit,
             offset,
             storeInput,
@@ -83,6 +86,7 @@ export const constantsFromInput = async (input: any) => {
             uploadTo,
             pathToImageUrls,
             outputTo,
+            outputDatasetId,
             fileNameFunction,
             preDownloadFunction,
             postDownloadFunction,
@@ -101,7 +105,7 @@ export const constantsFromInput = async (input: any) => {
 
 export const checkInput = (input: any) => {
     // Small hack to automatically load from webhook (no need for payload template)
-    const datasetId = input.datasetId || input.resource.defaultDatasetId;
+    const datasetId = input.datasetId || input.resource?.defaultDatasetId;
 
     if (!input.uploadTo) throw new Error('INPUT.uploadTo has to be specified!');
 
@@ -109,12 +113,25 @@ export const checkInput = (input: any) => {
         throw new Error('If you want to upload to S3, you have to provide all of s3Bucket, s3AccessKeyId and s3SecretAccessKey in input!');
     }
 
-    if (!datasetId && !input.storeInput) {
-        throw new Error('"datasetId or storeInput missing from the input!!!"');
+    if (!input.items?.length && !datasetId && !input.storeInput) {
+        throw new Error('You have to specify either datasetId, storeInput or items in input!');
     }
 
-    if (datasetId && datasetId.length !== 17) {
-        throw new Error('datasetId has to be a string with 17 characters! Check if you copied it correctly.');
+    if (input.items?.length && datasetId) {
+        log.warning('You cannot specify both datasetId and items in input! Ignoring items and using datasetId instead.');
+        input.items = null;
+    }
+
+    if (!input.items?.length) {
+        if (!datasetId && !input.storeInput) {
+            throw new Error('"datasetId or storeInput missing from the input!!!"');
+        }
+    
+        if (datasetId && datasetId.length !== 17) {
+            throw new Error('datasetId has to be a string with 17 characters! Check if you copied it correctly.');
+        }
+    } else if (!Array.isArray(input.items)) {
+        throw new Error('items has to be an array!');
     }
 
     // Should have format storeId-recordKey
@@ -152,5 +169,6 @@ export const checkInput = (input: any) => {
     if (!input.pathToImageUrls) {
         log.warning('Path to image Urls not specified, will assume that input is plain image Urls array');
     }
+
     return input;
 };

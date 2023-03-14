@@ -10,6 +10,12 @@
             "description": "Id of the dataset where the data are located. Image URLs will be extracted from there.",
             "editor": "textfield"
         },
+        "items": {
+            "title": "Items",
+            "type": "array",
+            "description": "Array of items that includes the image URLs.",
+            "editor": "hidden"
+        },
         "pathToImageUrls": {
             "title": "Path to image URLs",
             "type": "string",
@@ -52,6 +58,12 @@
                 "Key-value store",
                 "Dataset"
             ]
+        },
+        "outputDatasetId": {
+            "title": "Output dataset Name or ID",
+            "type": "string",
+            "description": "Name or ID of the dataset where the data will be saved. Only relevant if you want to output to dataset!",
+            "editor": "textfield"
         },
         "storeInput": {
             "title": "Key Value store input",

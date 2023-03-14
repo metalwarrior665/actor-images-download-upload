@@ -1,5 +1,5 @@
 import { Actor, log } from 'apify';
-import { BasicCrawler, BasicCrawlingContext, KeyValueStore, RequestList, sleep } from 'crawlee';
+import { BasicCrawler, BasicCrawlingContext, KeyValueStore, RequestList } from 'crawlee';
 import objectPath from 'object-path';
 import md5 from 'md5';
 
@@ -24,6 +24,7 @@ export default async ({ data, iterationInput, iterationIndex, stats, originalInp
         uploadTo,
         pathToImageUrls,
         outputTo,
+        outputDatasetId,
         fileNameFunction,
         preDownloadFunction,
         postDownloadFunction,
@@ -34,6 +35,7 @@ export default async ({ data, iterationInput, iterationIndex, stats, originalInp
         stateFields,
         noDownloadRun,
     } = iterationInput;
+    
     log.info('loading state...');
 
     const state: any = (await Actor.getValue(`STATE-IMAGES-${iterationIndex}`)) || {};
@@ -252,9 +254,11 @@ export default async ({ data, iterationInput, iterationIndex, stats, originalInp
 
         const archive = await archiveKVS(storeHandle);
 
-        await Actor.setValue('output-images', archive, { contentType: 'application/zip' });
+        const zipFileStore = await Actor.openKeyValueStore();
 
-        const zipFileUrl = (await Actor.openKeyValueStore()).getPublicUrl('output-images');
+        await zipFileStore.setValue('images-archive', archive, { contentType: 'application/zip' });
+
+        const zipFileUrl = zipFileStore.getPublicUrl('images-archive');
 
         await Actor.pushData({ zipFileUrl });
 
@@ -265,10 +269,10 @@ export default async ({ data, iterationInput, iterationIndex, stats, originalInp
     }
 
     // postprocessing function
-    if ((outputTo && outputTo !== 'no-output') && !(outputTo === 'dataset' && uploadTo === 'zip-file')) {
-        log.info('Will save output data to:', outputTo);
+    if ((outputTo && outputTo !== 'no-output')) {
+        log.info(`Will save output data to: ${outputTo}`);
         let processedData = postDownloadFunction
-            ? await postDownloadFunction({ data, state, fileNameFunction, md5, iterationIndex, input: originalInput })
+            ? await postDownloadFunction({ data, state, fileNameFunction, md5, iterationIndex, input: originalInput }, { Actor, objectPath })
             : data;
         log.info('Post-download processed data length:', processedData.length);
 
@@ -285,8 +289,9 @@ export default async ({ data, iterationInput, iterationIndex, stats, originalInp
             for (; index < processedData.length; index += chunkSize) {
                 log.info(`pushing data ${index}:${index + chunkSize}`);
                 iterationState[iterationIndex].pushed = index + chunkSize;
+                const dataset = await Actor.openDataset(outputDatasetId);
                 await Promise.all([
-                    Actor.pushData(processedData.slice(index, index + chunkSize)),
+                    dataset.pushData(processedData.slice(index, index + chunkSize)),
                     Actor.setValue('STATE-ITERATION', iterationState),
                 ]);
             }
