@@ -15,7 +15,7 @@ input = checkInput(input);
 
 const { mainInput, iterationInput } = await constantsFromInput(input);
 
-const { datasetId, limit, offset, storeInput, batchSize } = mainInput;
+const { datasetId, items, limit, offset, storeInput, batchSize } = mainInput;
 
 // Stats init
 const statsState: StatsState = await Actor.getValue('stats-state') as StatsState;
@@ -76,6 +76,10 @@ if (datasetId) {
     } else {
         log.warning('We cannot load data from kv store because they are not in a proper format');
     }
+} else if (items?.length) {
+    log.info(`Loading from input, count: ${items.length}`);
+    stats.set(props.itemsTotal, items.length, true);
+    await handleIterationFunction({ data: items, iterationInput, iterationIndex: 0, stats, originalInput: input });
 }
 
 try {

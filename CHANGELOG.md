@@ -1,3 +1,7 @@
+# 2023-03-13
+
+- Add two new option `items` and `outputDatasetId` to input.
+
 # 2023-02-07
 
 - Rewrite to crawlee, and overall updates.
@@ -5,6 +9,7 @@
 - Fixed issue with downloading images.
 
 #### Version-2 - 2019-12-02
+
 - Input has been completely redesigned. Please read it again and adjust.
 - Removed integration for cancelled Apify Crawler product.
 - Added automatic integration with actor webhooks.
