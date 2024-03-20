@@ -111,7 +111,7 @@ export default async ({ data, iterationInput, iterationIndex, stats, originalInp
                 stats.inc(props.itemsWithoutImages, updateStats);
                 return;
             }
-            imagesFromPath.forEach((image: any) => {
+            imagesFromPath.forEach((image: any, indexInArray: number) => {
                 stats.inc(props.imagesTotal, updateStats);
                 if (typeof image !== 'string') {
                     stats.inc(props.imagesNotString, updateStats);
@@ -123,6 +123,7 @@ export default async ({ data, iterationInput, iterationIndex, stats, originalInp
                     state[image] = {
                         imageIndex,
                         itemIndex,
+                        indexInArray,
                     };
                     imageIndex++;
                 } else if (typeof state[image] === 'object' && state[image].fromState) {
@@ -168,7 +169,7 @@ export default async ({ data, iterationInput, iterationIndex, stats, originalInp
 
         if (typeof state[url].imageUploaded === 'boolean') return; // means it was already download before
         const item = data[state[url].itemIndex];
-        const key = fileNameFunction({ url, md5, state, item, iterationIndex, input: originalInput });
+        const key = fileNameFunction({ url, md5, state, item, iterationIndex, indexInArray: state[url].indexInArray ,input: originalInput });
         // If filename is not a string, we don't continue. This can be used to prevent the download at this point
         if (typeof key !== 'string') {
             state[url].imageUploaded = false;

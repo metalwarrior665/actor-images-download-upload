@@ -139,13 +139,14 @@ For more advanced data preparation and post-processing, you can use any of the 3
 ### fileNameFunction
 `fileNameFunction` is the only one of the three that is always executed and has it's default form. It basically names each image file no matter where it is stored.
 
-It receives an object as argument with these properties which you can (but not need to) use. They should cover all use-cases for filename creation:
+It receives an object as an argument with these properties which you can (but not need to) use. They should cover all use-cases for filename creation:
 
 - `url`: <[string](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#String_type)> URL of the image.
 - `md5`: <[function](https://www.npmjs.com/package/md5)> Simple function that takes a string and produces a hash.
 - `state`: <[object](https://www.w3schools.com/js/js_objects.asp)> Reference to the entire [state](#state) object.
 - `item`: <[object](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object)> The item object where the image URL is located.
 - `iterationIndex`: <[number](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#Number_type)> Index of the current iteration(batch). Look at [internals](#internals) for more info. Starts at 0.
+- `indexInArray`:<[number](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#Number_type)> If images were inside of an array, this is an index of the current image in the array.
 - `input`: <[object](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object)> Original input of the actor
 
 By default `fileNameFunction` simply produces a hash of the image URL:
