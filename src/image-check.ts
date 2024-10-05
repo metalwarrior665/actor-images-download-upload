@@ -1,4 +1,5 @@
 import imageSize from 'image-size';
+import mime from 'mime';
 import { fileTypeFromBuffer, FileTypeResult } from 'file-type';
 import { dwebp } from 'webp-converter';
 import fs from 'fs';
@@ -30,7 +31,7 @@ export const convertWebpToPng = async (origBuffer: any, key: any) => {
     return readFileAsync(pngKey);
 };
 
-export const checkIfImage = async (response: any, imageCheck: any) => {
+export const checkIfImage = async (response: any, imageCheck: any, url: string) => {
     const result: {
         isImage: boolean;
         error?: string;
@@ -61,12 +62,21 @@ export const checkIfImage = async (response: any, imageCheck: any) => {
             return result;
         }
 
-        const buffer = response.body;
+        const buffer: Buffer | string = response.body;
 
         if (imageCheck.type === 'content-type' || imageCheck.type === 'image-size') {
-            const { mime } = await fileTypeFromBuffer(buffer) as FileTypeResult;
-            result.contentType = mime;
-            if (!mime.includes('image/')) {
+            /** Text based files (.svg) are detected by their URL path, while binary files are detected by their buffer */
+            const isTextBasedFile = typeof buffer === 'string';
+
+            if (isTextBasedFile) {
+                const urlPath = new URL(url).pathname;
+                result.contentType = mime.getType(urlPath) ?? undefined;
+            } else {
+                const { mime } = (await fileTypeFromBuffer(buffer)) as FileTypeResult;
+                result.contentType = mime;
+            }
+
+            if (!result.contentType?.includes('image/')) {
                 result.error = `Content type is not an image. Instead: ${mime}`;
                 // We also retry on bad content-type, this can mean captcha
                 result.retry = true;
@@ -83,7 +93,9 @@ export const checkIfImage = async (response: any, imageCheck: any) => {
         }
 
         if (imageCheck.type === 'image-size') {
-            const { width, height } = imageSize(buffer);
+            const imageBuffer = Buffer.from(buffer);
+            const { width, height } = imageSize(imageBuffer);
+
             result.sizes.width = width;
             result.sizes.height = height;
             if (width < imageCheck.minWidth || height < imageCheck.minHeight) {

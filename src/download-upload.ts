@@ -74,6 +74,7 @@ const download = async (url: string, imageCheck: ImageCheck, key: string, downlo
             needle("get", url, {
                 agent: proxyAgent,
                 setEncoding: null,
+                follow_max: 5,
             }).catch(err => {
                 throw new Error(err);
             }),
@@ -91,7 +92,11 @@ const download = async (url: string, imageCheck: ImageCheck, key: string, downlo
         if (!response) continue;
 
         const startProcessing = Date.now();
-        const { isImage, error, retry, contentType, sizes } = await checkIfImage(response, imageCheck);
+
+        const isRedirect = [301, 302].includes(response.statusCode);
+        const imageUrl = isRedirect ? response.headers.location : url;
+
+        const { isImage, error, retry, contentType, sizes } = await checkIfImage(response, imageCheck, imageUrl);
         sizesMain = sizes;
         timeProcessing += Date.now() - startProcessing;
 
