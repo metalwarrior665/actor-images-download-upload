@@ -1,3 +1,8 @@
+# 2024-05-10
+
+- Added support for text based image files like SVG etc.
+- Added support for redirecting to the actual image URL.
+
 # 2023-03-13
 
 - Add two new option `items` and `outputDatasetId` to input.
