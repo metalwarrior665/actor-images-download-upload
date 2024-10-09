@@ -1,4 +1,8 @@
-# 2024-05-10
+# 2024-10-10
+
+- Fixed ZIP file upload issue for new text based image files (e.g. SVG).
+
+# 2024-10-05
 
 - Added support for text based image files like SVG etc.
 - Added support for redirecting to the actual image URL.
