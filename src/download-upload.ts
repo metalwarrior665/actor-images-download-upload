@@ -17,17 +17,24 @@ const deduplicateErrors = (errors: any) => {
 
 const upload = async (key: string, buffer: any, uploadOptions: any, contentType: any) => {
     const errors: string[] = [];
-    if (uploadOptions.uploadTo === 'key-value-store' || uploadOptions.uploadTo === 'zip-file') {
+    const uploadToZip = uploadOptions.uploadTo === 'zip-file';
+
+    if (uploadOptions.uploadTo === 'key-value-store' || uploadToZip) {
+        // For zip file, we store the buffer with the content type into a JSON object, because later we need the 
+        // content type to append the correct extension to the file
+        // For regular KVS upload, we store the buffer directly
+        const valueOptions: [string, any, any?] = uploadToZip
+            ? [key, { buffer, contentType }]
+            : [key, buffer, { contentType }];
+
         if (uploadOptions.storeHandle) {
-            await uploadOptions.storeHandle.setValue(key, buffer, { contentType })
-                .catch((e: Error) => {
-                    errors.push(e.message);
-                });
+            await uploadOptions.storeHandle.setValue(...valueOptions).catch((e: Error) => {
+                errors.push(e.message);
+            });
         } else {
-            await Actor.setValue(key, buffer, { contentType })
-                .catch((e: Error) => {
-                    errors.push(e.message);
-                });
+            await Actor.setValue(...valueOptions).catch((e: Error) => {
+                errors.push(e.message);
+            });
         }
     }
     if (uploadOptions.uploadTo === 's3') {
