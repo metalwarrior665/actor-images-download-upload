@@ -1,7 +1,7 @@
-import { KeyValueStore, log } from "crawlee";
-import archiver from "archiver";
-import { fileTypeFromBuffer, FileTypeResult } from "file-type";
-import fs from "fs";
+import archiver from 'archiver';
+import { KeyValueStore, log } from 'crawlee';
+import fs from 'fs';
+import mime from 'mime';
 
 const archiveFilePath = `./archive.zip`;
 
@@ -23,10 +23,10 @@ export const archiveKVS = async (store: KeyValueStore) => {
     archive.pipe(output);
 
     await store.forEachKey(async (key) => {
-        const buffer = (await store.getValue(key)) as Buffer;
-        const { ext } = await fileTypeFromBuffer(buffer) as FileTypeResult;
+        const { buffer, contentType } = (await store.getValue(key)) as { buffer: Buffer | string; contentType: string };
+        const extension = mime.getExtension(contentType);
 
-        archive.append(buffer, { name: `${key}.${ext}` });
+        archive.append(Buffer.from(buffer), { name: `${key}.${extension}` });
     });
 
     await archive.finalize();

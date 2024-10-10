@@ -64,18 +64,17 @@ export const checkIfImage = async (response: any, imageCheck: any, url: string) 
 
         const buffer: Buffer | string = response.body;
 
+        /** Text based files (.svg) are detected by their URL path, while binary files are detected by their buffer */
+        const isTextBasedFile = typeof buffer === 'string';
+        if (isTextBasedFile) {
+            const urlPath = new URL(url).pathname;
+            result.contentType = mime.getType(urlPath) ?? undefined;
+        } else {
+            const { mime } = (await fileTypeFromBuffer(buffer)) as FileTypeResult;
+            result.contentType = mime;
+        }
+
         if (imageCheck.type === 'content-type' || imageCheck.type === 'image-size') {
-            /** Text based files (.svg) are detected by their URL path, while binary files are detected by their buffer */
-            const isTextBasedFile = typeof buffer === 'string';
-
-            if (isTextBasedFile) {
-                const urlPath = new URL(url).pathname;
-                result.contentType = mime.getType(urlPath) ?? undefined;
-            } else {
-                const { mime } = (await fileTypeFromBuffer(buffer)) as FileTypeResult;
-                result.contentType = mime;
-            }
-
             if (!result.contentType?.includes('image/')) {
                 result.error = `Content type is not an image. Instead: ${mime}`;
                 // We also retry on bad content-type, this can mean captcha
