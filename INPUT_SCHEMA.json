@@ -8,7 +8,8 @@
             "title": "Dataset Id",
             "type": "string",
             "description": "Id of the dataset where the data are located. Image URLs will be extracted from there.",
-            "editor": "textfield"
+            "resourceType": "dataset",
+            "resourcePermissions": ["READ", "WRITE"]
         },
         "items": {
             "title": "Items",
@@ -63,13 +64,15 @@
             "title": "Output dataset Name or ID",
             "type": "string",
             "description": "Name or ID of the dataset where the data will be saved. Only relevant if you want to output to dataset!",
-            "editor": "textfield"
+            "resourceType": "dataset",
+            "resourcePermissions": ["READ", "WRITE"]
         },
         "storeInput": {
             "title": "Key Value store input",
             "type": "string",
             "description": "If you want to input the data from key-value store instead of dataset. Notation: `storeId-recordKey`, e.g. - `kWdGzuXuKfYkrntWw-OUTPUT`",
-            "editor": "textfield"
+            "resourceType": "keyValueStore",
+            "resourcePermissions": ["READ"]
         },
         "uploadTo": {
             "title": "Upload to",
@@ -94,7 +97,8 @@
             "title": "Key-value store name",
             "type": "string",
             "description": "Key-value store name where the images will be upload. Empty field means it will be uploaded to the default key-value store",
-            "editor": "textfield"
+            "resourceType": "keyValueStore",
+            "resourcePermissions": ["READ", "WRITE"]
         },
         "s3Bucket": {
             "title": "S3 Bucket",
