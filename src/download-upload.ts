@@ -60,9 +60,7 @@ const upload = async (key: string, buffer: any, uploadOptions: any, contentType:
 const download = async (url: string, imageCheck: ImageCheck, key: string, downloadOptions: any) => {
     const { downloadTimeout, maxRetries, proxyConfiguration } = downloadOptions;
 
-    const proxyUrl = proxyConfiguration && proxyConfiguration.useApifyProxy
-        ? await (await Actor.createProxyConfiguration(proxyConfiguration))!.newUrl()
-        : null;
+    const proxyUrl = await proxyConfiguration?.newUrl();
     const proxyAgent = proxyUrl ? new HttpsProxyAgent({ proxy: proxyUrl! }) : null;
 
     const errors: string[] = [];
@@ -93,6 +91,7 @@ const download = async (url: string, imageCheck: ImageCheck, key: string, downlo
     let timeProcessing = 0;
 
     while (!imageDownloaded && errors.length <= maxRetries) {
+        log.debug(`Attempting to download image`, { url, attempt: errors.length + 1 });
         const startDownloading = Date.now();
         response = await sendRequest();
         timeDownloading += Date.now() - startDownloading;
@@ -172,13 +171,18 @@ export const downloadUpload = async (url: string, key: string, downloadUploadOpt
         sizes,
     } = await download(url, imageCheck, key, downloadOptions);
 
+    log.debug(`Downloaded image for ${url}:`, { retryCount, contentType, imageDownloaded, timeDownloading, timeProcessing, sizes, errors: downloadErrors });
+
     time.downloading = timeDownloading;
     time.processing = timeProcessing;
 
     if (imageDownloaded) {
         const startUploading = Date.now();
+        log.debug(`Uploading image for ${url}`);
         const uploadResult = await upload(key, response.body, uploadOptions, contentType);
         time.uploading += (Date.now() - startUploading);
+
+        log.debug(`Uploaded image for ${url}:`, { ...uploadResult, timeUploading: time.uploading });
 
         ({ imageUploaded } = uploadResult);
         uploadResult.errors.forEach((error) => {

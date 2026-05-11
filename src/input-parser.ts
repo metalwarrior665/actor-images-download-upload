@@ -69,7 +69,7 @@ export const constantsFromInput = async (input: any) => {
     const downloadOptions = {
         downloadTimeout,
         maxRetries: imageCheckMaxRetries,
-        proxyConfiguration,
+        proxyConfiguration: await Actor.createProxyConfiguration(proxyConfiguration),
     };
     const downloadUploadOptions = { downloadOptions, uploadOptions };
 

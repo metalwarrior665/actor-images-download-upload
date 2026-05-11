@@ -1,3 +1,6 @@
+# 2026-05-11
+- Fixed issue with limited permissions causing failed downloads
+
 # 2024-10-10
 
 - Fixed ZIP file upload issue for new text based image files (e.g. SVG).

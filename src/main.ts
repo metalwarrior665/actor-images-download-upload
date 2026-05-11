@@ -7,11 +7,15 @@ import handleIterationFunction from './handle-iteration-function.js';
 
 await Actor.init();
 
-let input = await Actor.getInput();
+let input = (await Actor.getInput<Record<string, any>>())!;
 log.info('INPUT');
 console.dir(hideTokenFromInput(input));
 
 input = checkInput(input);
+
+if (input.debugLog) {
+    log.setLevel(log.LEVELS.DEBUG);
+}
 
 const { mainInput, iterationInput } = await constantsFromInput(input);
 
